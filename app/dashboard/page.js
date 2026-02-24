@@ -10,26 +10,35 @@ import SearchForm from "@/components/SearchForm";
 import ResultsTable from "@/components/ResultsTable";
 import PackageCard from "@/components/PackageCard";
 
-// ── Mock Data ──────────────────────────────────────────────────────────────
-const MOCK_RESULTS = [
-    { name: "Sharma & Associates", category: "Chartered Accountants", rating: 4.8, reviews: 124, phone: "+91-11-2334-5678", address: "B-12, Connaught Place, New Delhi, 110001", website: "https://sharmaassociates.in", mapUrl: "https://maps.google.com" },
-    { name: "Delhi Tax Consultants", category: "Tax Consultants", rating: 4.5, reviews: 89, phone: "+91-11-2345-6789", address: "First Floor, L Block, Connaught Place, New Delhi", website: "https://delhitax.com", mapUrl: "https://maps.google.com" },
-    { name: "Gupta Legal Services", category: "Legal Services", rating: 4.7, reviews: 201, phone: "+91-11-4567-8901", address: "42, Barakhamba Road, New Delhi, 110001", website: "https://guptalegal.in", mapUrl: "https://maps.google.com" },
-    { name: "Verma Audit Firm", category: "Chartered Accountants", rating: 4.3, reviews: 56, phone: "+91-11-5678-9012", address: "Tolstoy Marg, Janpath Area, New Delhi", website: null, mapUrl: "https://maps.google.com" },
-    { name: "Capital Finance Advisory", category: "Financial Advisors", rating: 4.9, reviews: 312, phone: "+91-98765-43210", address: "DLF Centre, Sansad Marg, New Delhi, 110001", website: "https://capitalfinance.co.in", mapUrl: "https://maps.google.com" },
-    { name: "Singh & Partners CA", category: "Chartered Accountants", rating: 4.6, reviews: 67, phone: "+91-11-6789-0123", address: "A-23, Middle Circle, Connaught Place, Delhi", website: "https://singhpartners.co", mapUrl: "https://maps.google.com" },
-    { name: "Agarwal Tax House", category: "Tax Consultants", rating: 4.2, reviews: 45, phone: "+91-11-7890-1234", address: "F-14, Rajiv Chowk Metro Station Area, CP", website: null, mapUrl: "https://maps.google.com" },
-    { name: "National Audit Bureau", category: "Auditors", rating: 4.4, reviews: 178, phone: "+91-11-8901-2345", address: "Parliament Street, New Delhi, 110001", website: "https://nab.co.in", mapUrl: "https://maps.google.com" },
-    { name: "PKR & Company", category: "Chartered Accountants", rating: 4.1, reviews: 34, phone: "+91-99876-54321", address: "Janpath Lane, Near Palika Bazaar, New Delhi", website: "https://pkrco.in", mapUrl: "https://maps.google.com" },
-    { name: "Metro Business Solutions", category: "Business Consulting", rating: 4.7, reviews: 256, phone: "+91-11-9012-3456", address: "Kasturba Gandhi Marg, New Delhi, 110001", website: "https://metrobusiness.in", mapUrl: "https://maps.google.com" },
-];
+function mapResultForTable(r) {
+    return {
+        name: r.name,
+        category: r.category,
+        rating: r.rating,
+        reviews: r.review_count ?? r.reviews,
+        phone: r.phone,
+        address: r.address,
+        website: r.website,
+        mapUrl: r.maps_url ?? r.mapUrl,
+    };
+}
 
-const PACKAGES = [
-    { id: "starter", name: "Starter", credits: 50, price: 499, features: ["50 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Email support"] },
-    { id: "growth", name: "Growth", credits: 200, price: 1499, features: ["200 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Priority support", "Cached results at 0 cost"] },
-    { id: "pro", name: "Pro", credits: 500, price: 2999, features: ["500 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Priority support", "Cached results at 0 cost", "Bulk export"] },
-    { id: "enterprise", name: "Enterprise", credits: 2000, price: 9999, features: ["2,000 search credits", "Export to Excel & CSV", "All providers", "Dedicated support", "Cached results at 0 cost", "Bulk export", "API access"] },
-];
+function packageForCard(pkg) {
+    const price = pkg.price_inr != null ? pkg.price_inr / 100 : (pkg.price ?? 0);
+    return {
+        id: pkg.id,
+        name: pkg.name,
+        credits: pkg.credits,
+        price,
+        price_inr: pkg.price_inr,
+        features: [
+            `${pkg.credits} search credits`,
+            "Export to Excel & CSV",
+            "Google Places + SerpAPI",
+            "Cached results at 0 cost",
+        ],
+    };
+}
 
 // ── Dashboard Page ─────────────────────────────────────────────────────────
 export default function DashboardPage() {
@@ -47,8 +56,33 @@ export default function DashboardPage() {
     const [lastQuery, setLastQuery] = useState(null);
     const [cached, setCached] = useState(false);
     const [recentSearches, setRecentSearches] = useState([]);
+    const [packages, setPackages] = useState([]);
 
     const [showModal, setShowModal] = useState(false);
+
+    const fetchCredits = async (token) => {
+        if (!token) return;
+        try {
+            const res = await fetch("/api/credits", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCredits(data.credits ?? 0);
+                setTotalSearches(data.total_searches ?? 0);
+                setTotalExports(data.total_exported ?? 0);
+                setPackages(data.packages ?? []);
+                setRecentSearches((data.recent_searches ?? []).map((s) => ({
+                    business: s.query,
+                    locality: s.location ?? "",
+                    provider: s.provider === "serpapi" ? "serpapi" : "google",
+                    time: s.created_at ? new Date(s.created_at).toLocaleString() : "",
+                })));
+            }
+        } catch (e) {
+            console.error("Failed to fetch credits", e);
+        }
+    };
 
     // ── Auth Check ───────────────────────────────────────────────────────────
     useEffect(() => {
@@ -59,6 +93,7 @@ export default function DashboardPage() {
                 return;
             }
             setSession(session);
+            await fetchCredits(session.access_token);
             setAuthLoading(false);
         };
         checkAuth();
@@ -71,70 +106,153 @@ export default function DashboardPage() {
         setCached(false);
         setLastQuery({ business, locality, provider });
 
-        // Simulate API call
-        await new Promise((r) => setTimeout(r, 1500));
-
-        const isCached = Math.random() > 0.7;
-        setCached(isCached);
-        setResults(MOCK_RESULTS);
-        setTotalSearches((prev) => prev + 1);
-        if (!isCached) setCredits((prev) => Math.max(0, prev - 1));
-
-        // Add to recent searches
-        setRecentSearches((prev) => {
-            const updated = [{ business, locality, time: new Date().toLocaleTimeString() }, ...prev];
-            return updated.slice(0, 5);
-        });
-
-        setSearchLoading(false);
+        try {
+            const res = await fetch("/api/search", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    query: business,
+                    location: locality,
+                    provider: provider === "serpapi" ? "serpapi" : "google_places",
+                }),
+            });
+            if (res.status === 402) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || "Insufficient credits");
+                setSearchLoading(false);
+                return;
+            }
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || "Search failed");
+                setSearchLoading(false);
+                return;
+            }
+            const data = await res.json();
+            setResults((data.results ?? []).map(mapResultForTable));
+            setCached(data.cached ?? false);
+            setCredits(data.credits_remaining ?? credits);
+            setTotalSearches((prev) => prev + (data.cached ? 0 : 1));
+            await fetchCredits(session?.access_token);
+        } catch (e) {
+            console.error(e);
+            alert("Search failed. Please try again.");
+        } finally {
+            setSearchLoading(false);
+        }
     };
 
     // ── Export Handlers ──────────────────────────────────────────────────────
-    const handleExport = (format) => {
-        // Mock export — trigger dummy download
-        const content = format === "csv"
-            ? "Name,Category,Rating,Phone,Address\n" + results.map(r => `"${r.name}","${r.category}",${r.rating},"${r.phone}","${r.address}"`).join("\n")
-            : "Mock Excel export data";
-
-        const blob = new Blob([content], { type: format === "csv" ? "text/csv" : "application/vnd.ms-excel" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `leads_export.${format === "csv" ? "csv" : "xlsx"}`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setTotalExports((prev) => prev + 1);
+    const handleExport = async (format) => {
+        if (results.length === 0) return;
+        try {
+            const res = await fetch("/api/export", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    results,
+                    format: format === "csv" ? "csv" : "xlsx",
+                }),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || "Export failed");
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `leads_export_${Date.now()}.${format === "csv" ? "csv" : "xlsx"}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            setTotalExports((prev) => prev + results.length);
+            await fetchCredits(session?.access_token);
+        } catch (e) {
+            console.error(e);
+            alert("Export failed. Please try again.");
+        }
     };
 
     // ── Razorpay Buy Handler ─────────────────────────────────────────────────
-    const handleBuy = (pkg) => {
+    const handleBuy = async (pkg) => {
         if (typeof window === "undefined" || !window.Razorpay) {
             alert("Razorpay SDK not loaded. Please refresh and try again.");
             return;
         }
-
-        const options = {
-            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-            amount: pkg.price * 100,
-            currency: "INR",
-            name: "LeadFinder",
-            description: `${pkg.credits} Search Credits — ${pkg.name} Pack`,
-            handler: function (response) {
-                // In production, verify payment server-side
-                setCredits((prev) => prev + pkg.credits);
-                setShowModal(false);
-                alert(`Payment successful! ${pkg.credits} credits added.`);
-            },
-            prefill: {
-                email: session?.user?.email || "",
-            },
-            theme: {
-                color: "#22c55e",
-            },
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.open();
+        if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+            alert("Razorpay is not configured.");
+            return;
+        }
+        try {
+            const orderRes = await fetch("/api/razorpay/create-order", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({ package_id: pkg.id }),
+            });
+            if (!orderRes.ok) {
+                const err = await orderRes.json().catch(() => ({}));
+                alert(err.error || "Failed to create order");
+                return;
+            }
+            const { order_id, amount, currency, package: pkgInfo } = await orderRes.json();
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount,
+                currency: currency || "INR",
+                order_id,
+                name: "LeadFinder",
+                description: `${pkg.credits} Search Credits — ${pkg.name} Pack`,
+                handler: async function (response) {
+                    try {
+                        const verifyRes = await fetch("/api/razorpay/verify", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${session?.access_token}`,
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                package_id: pkg.id,
+                            }),
+                        });
+                        if (!verifyRes.ok) {
+                            const err = await verifyRes.json().catch(() => ({}));
+                            alert(err.error || "Payment verification failed");
+                            return;
+                        }
+                        const data = await verifyRes.json();
+                        setCredits(data.new_balance ?? credits + pkg.credits);
+                        setShowModal(false);
+                        await fetchCredits(session?.access_token);
+                        alert(`Payment successful! ${data.credits_added} credits added.`);
+                    } catch (e) {
+                        console.error(e);
+                        alert("Verification failed. Please contact support if credits were charged.");
+                    }
+                },
+                prefill: {
+                    email: session?.user?.email || "",
+                },
+                theme: { color: "#22c55e" },
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to start payment. Please try again.");
+        }
     };
 
     // ── Logout ───────────────────────────────────────────────────────────────
@@ -266,7 +384,7 @@ export default function DashboardPage() {
                                     {recentSearches.map((s, i) => (
                                         <button
                                             key={i}
-                                            onClick={() => handleSearch({ business: s.business, locality: s.locality, provider: "google" })}
+                                            onClick={() => handleSearch({ business: s.business, locality: s.locality, provider: s.provider || "google" })}
                                             className="bg-white border border-slate-200 hover:border-brand-300 text-slate-600 hover:text-brand-600 text-xs font-medium px-4 py-2 rounded-lg transition-all"
                                         >
                                             {s.business}{s.locality ? ` in ${s.locality}` : ""} · {s.time}
@@ -312,11 +430,11 @@ export default function DashboardPage() {
 
                         {/* Package Cards */}
                         <div className="space-y-4 mb-6">
-                            {PACKAGES.map((pkg) => (
+                            {(packages.length ? packages.map(packageForCard) : []).map((pkg) => (
                                 <PackageCard
                                     key={pkg.id}
                                     pkg={pkg}
-                                    popular={pkg.id === "growth"}
+                                    popular={pkg.name === "Growth"}
                                     onBuy={handleBuy}
                                 />
                             ))}
