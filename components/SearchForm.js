@@ -21,17 +21,18 @@ export default function SearchForm({ onSearch, loading = false, variant = "light
     const [business, setBusiness] = useState("");
     const [locality, setLocality] = useState("");
     const [provider, setProvider] = useState("google");
+    const [deep, setDeep] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!business.trim()) return;
-        onSearch({ business: business.trim(), locality: locality.trim(), provider });
+        onSearch({ business: business.trim(), locality: locality.trim(), provider, deep });
     };
 
     const handleChipClick = (chip) => {
         setBusiness(chip.business);
         setLocality(chip.locality);
-        onSearch({ business: chip.business, locality: chip.locality, provider });
+        onSearch({ business: chip.business, locality: chip.locality, provider, deep });
     };
 
     return (
@@ -85,6 +86,17 @@ export default function SearchForm({ onSearch, loading = false, variant = "light
                         </button>
                     </div>
                 </div>
+                {provider === "google" && (
+                    <label className={`flex items-center gap-2 mt-3 cursor-pointer ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        <input
+                            type="checkbox"
+                            checked={deep}
+                            onChange={(e) => setDeep(e.target.checked)}
+                            className="rounded border-white/20 text-[#22c55e] focus:ring-[#22c55e]"
+                        />
+                        <span className="text-sm">Deep Search (up to 40 results, uses 2 credits)</span>
+                    </label>
+                )}
             </form>
             <div className="flex flex-wrap gap-2 mt-4">
                 {QUICK_CHIPS.map((chip) => (

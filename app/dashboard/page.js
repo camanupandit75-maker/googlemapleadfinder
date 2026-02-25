@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabase } from "@/lib/supabase";
@@ -55,6 +55,12 @@ export default function DashboardPage() {
     const [searchLoading, setSearchLoading] = useState(false);
     const [lastQuery, setLastQuery] = useState(null);
     const [cached, setCached] = useState(false);
+
+    const [filterName, setFilterName] = useState("");
+    const [filterMinRating, setFilterMinRating] = useState("");
+    const [filterHasPhone, setFilterHasPhone] = useState(false);
+    const [filterHasEmail, setFilterHasEmail] = useState(false);
+    const [filterHasWebsite, setFilterHasWebsite] = useState(false);
     const [recentSearches, setRecentSearches] = useState([]);
     const [packages, setPackages] = useState([]);
     const [enriching, setEnriching] = useState(false);
@@ -62,6 +68,34 @@ export default function DashboardPage() {
     const [searchError, setSearchError] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
+
+    const filteredResults = useMemo(() => {
+        let list = results;
+        if (filterName.trim()) {
+            const q = filterName.trim().toLowerCase();
+            list = list.filter((r) => (r.name ?? "").toLowerCase().includes(q));
+        }
+        if (filterMinRating) {
+            const min = parseFloat(filterMinRating, 10);
+            if (!Number.isNaN(min)) {
+                list = list.filter((r) => r.rating != null && Number(r.rating) >= min);
+            }
+        }
+        if (filterHasPhone) list = list.filter((r) => !!(r.phone ?? "").trim());
+        if (filterHasEmail) list = list.filter((r) => (r.enriched_emails?.length ?? 0) > 0);
+        if (filterHasWebsite) list = list.filter((r) => !!(r.website ?? "").trim());
+        return list;
+    }, [results, filterName, filterMinRating, filterHasPhone, filterHasEmail, filterHasWebsite]);
+
+    const hasActiveFilters = !!(filterName.trim() || filterMinRating || filterHasPhone || filterHasEmail || filterHasWebsite);
+
+    const resetFilters = () => {
+        setFilterName("");
+        setFilterMinRating("");
+        setFilterHasPhone(false);
+        setFilterHasEmail(false);
+        setFilterHasWebsite(false);
+    };
 
     const fetchCredits = async (token) => {
         if (!token) return;
@@ -103,12 +137,17 @@ export default function DashboardPage() {
     }, []);
 
     // ── Search Handler ───────────────────────────────────────────────────────
-    const handleSearch = async ({ business, locality, provider }) => {
+    const handleSearch = async ({ business, locality, provider, deep = false }) => {
         setSearchLoading(true);
         setSearchError(null);
         setResults([]);
         setCached(false);
-        setLastQuery({ business, locality, provider });
+        setLastQuery({ business, locality, provider, deep });
+        setFilterName("");
+        setFilterMinRating("");
+        setFilterHasPhone(false);
+        setFilterHasEmail(false);
+        setFilterHasWebsite(false);
 
         try {
             const res = await fetch("/api/search", {
@@ -121,6 +160,7 @@ export default function DashboardPage() {
                     query: business,
                     location: locality,
                     provider: provider === "serpapi" ? "serpapi" : "google_places",
+                    deep: !!deep,
                 }),
             });
             const data = await res.json().catch(() => ({}));
@@ -139,6 +179,7 @@ export default function DashboardPage() {
             setCredits(data.credits_remaining ?? credits);
             setTotalSearches((prev) => prev + (data.cached ? 0 : 1));
             setEnrichmentStats(null);
+            setLastQuery((prev) => prev ? { ...prev, creditsUsed: data.credits_used ?? 1 } : null);
             await fetchCredits(session?.access_token);
         } catch (e) {
             console.error(e);
@@ -188,7 +229,7 @@ export default function DashboardPage() {
                     Authorization: `Bearer ${session?.access_token}`,
                 },
                 body: JSON.stringify({
-                    results,
+                    results: filteredResults,
                     format: format === "csv" ? "csv" : "xlsx",
                 }),
             });
@@ -204,7 +245,7 @@ export default function DashboardPage() {
             a.download = `leads_export_${Date.now()}.${format === "csv" ? "csv" : "xlsx"}`;
             a.click();
             URL.revokeObjectURL(url);
-            setTotalExports((prev) => prev + results.length);
+            setTotalExports((prev) => prev + filteredResults.length);
             await fetchCredits(session?.access_token);
         } catch (e) {
             console.error(e);
@@ -390,7 +431,7 @@ export default function DashboardPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 animate-fade-in">
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-sm font-medium text-slate-300">
-                                    {results.length} results found
+                                    {hasActiveFilters ? `Showing ${filteredResults.length} of ${results.length} results` : `${results.length} results found`}
                                 </span>
                                 {cached ? (
                                     <span className="bg-blue-500/10 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-500/20">
@@ -398,7 +439,7 @@ export default function DashboardPage() {
                                     </span>
                                 ) : (
                                     <span className="text-xs text-slate-500">
-                                        1 credit used · via {lastQuery?.provider === "google" ? "Google Places" : "SerpAPI"}
+                                        {lastQuery?.creditsUsed ?? 1} credit{(lastQuery?.creditsUsed ?? 1) !== 1 ? "s" : ""} used · via {lastQuery?.provider === "google" ? "Google Places" : "SerpAPI"}
                                     </span>
                                 )}
                                 {enrichmentStats && (
@@ -423,19 +464,82 @@ export default function DashboardPage() {
                                 </button>
                                 <button
                                     onClick={() => handleExport("excel")}
-                                    className="bg-[#22c55e] hover:bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                                    disabled={filteredResults.length === 0}
+                                    className="bg-[#22c55e] hover:bg-brand-600 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
                                 >
                                     📥 Export Excel
                                 </button>
                                 <button
                                     onClick={() => handleExport("csv")}
-                                    className="border border-white/10 hover:border-white/20 text-slate-300 text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                                    disabled={filteredResults.length === 0}
+                                    className="border border-white/10 hover:border-white/20 disabled:opacity-50 text-slate-300 text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
                                 >
                                     📥 CSV
                                 </button>
                             </div>
                         </div>
-                        <ResultsTable results={results} showEnrichedColumns={!!enrichmentStats} variant="dark" />
+
+                        {/* Filter bar */}
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-4 mb-4 flex flex-wrap items-center gap-3">
+                            <input
+                                type="text"
+                                value={filterName}
+                                onChange={(e) => setFilterName(e.target.value)}
+                                placeholder="Search by name..."
+                                className="px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e] w-48"
+                            />
+                            <select
+                                value={filterMinRating}
+                                onChange={(e) => setFilterMinRating(e.target.value)}
+                                className="px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                            >
+                                <option value="">Min rating: Any</option>
+                                <option value="3">3+</option>
+                                <option value="3.5">3.5+</option>
+                                <option value="4">4+</option>
+                                <option value="4.5">4.5+</option>
+                            </select>
+                            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={filterHasPhone}
+                                    onChange={(e) => setFilterHasPhone(e.target.checked)}
+                                    className="rounded border-white/20 text-[#22c55e] focus:ring-[#22c55e]"
+                                />
+                                Has Phone
+                            </label>
+                            {enrichmentStats && (
+                                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={filterHasEmail}
+                                        onChange={(e) => setFilterHasEmail(e.target.checked)}
+                                        className="rounded border-white/20 text-[#22c55e] focus:ring-[#22c55e]"
+                                    />
+                                    Has Email
+                                </label>
+                            )}
+                            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={filterHasWebsite}
+                                    onChange={(e) => setFilterHasWebsite(e.target.checked)}
+                                    className="rounded border-white/20 text-[#22c55e] focus:ring-[#22c55e]"
+                                />
+                                Has Website
+                            </label>
+                            {hasActiveFilters && (
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="text-xs font-medium text-slate-400 hover:text-white px-2 py-1 rounded border border-white/10 hover:border-white/20"
+                                >
+                                    Reset Filters
+                                </button>
+                            )}
+                        </div>
+
+                        <ResultsTable results={filteredResults} showEnrichedColumns={!!enrichmentStats} variant="dark" />
                     </>
                 )}
 
