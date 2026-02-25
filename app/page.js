@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const FEATURES = [
   { emoji: "🔍", title: "Search Any Locality", desc: "Enter any PIN code, city, or area name to find businesses listed on Google Maps." },
@@ -100,12 +101,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-8 text-center">
-        <p className="text-sm text-slate-500">
-          © {new Date().getFullYear()} LeadFinder · Built by Trutech Finance Consultants
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }

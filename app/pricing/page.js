@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const PACKAGES = [
     { id: "starter", name: "Starter", credits: 50, price: 499, features: ["50 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Email support", "Cached results at 0 cost"] },
@@ -134,12 +135,7 @@ export default function PricingPage() {
                 </div>
             </section>
 
-            {/* ── Footer ─────────────────────────────────────────────────────────── */}
-            <footer className="border-t border-white/10 py-8 text-center">
-                <p className="text-sm text-slate-500">
-                    © {new Date().getFullYear()} LeadFinder · Built by Trutech Finance Consultants
-                </p>
-            </footer>
+            <Footer />
         </div>
     );
 }
