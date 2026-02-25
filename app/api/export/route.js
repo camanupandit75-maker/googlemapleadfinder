@@ -3,7 +3,7 @@ import { getUser } from "@/lib/auth";
 import { createServerSupabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 
-const COLUMNS = [
+const BASE_COLUMNS = [
   "S.No",
   "Name",
   "Category",
@@ -18,22 +18,37 @@ const COLUMNS = [
   "Google Maps URL",
 ];
 
-function buildRows(results) {
+const ENRICHED_COLUMNS = ["Email", "WhatsApp", "LinkedIn", "Facebook", "Extra Phones"];
+
+function buildRows(results, includeEnriched = false) {
   const list = Array.isArray(results) ? results : [];
-  return list.map((r, i) => [
-    i + 1,
-    r.name ?? "",
-    r.category ?? "",
-    r.rating ?? "",
-    r.review_count ?? r.reviews ?? "",
-    r.phone ?? "",
-    r.address ?? "",
-    r.website ?? "",
-    r.hours ?? "",
-    r.latitude ?? "",
-    r.longitude ?? "",
-    r.maps_url ?? r.mapUrl ?? "",
-  ]);
+  const hasEnriched = includeEnriched && list.some((r) => r.enriched_emails?.length || r.enriched_whatsapp?.length);
+  return list.map((r, i) => {
+    const base = [
+      i + 1,
+      r.name ?? "",
+      r.category ?? "",
+      r.rating ?? "",
+      r.review_count ?? r.reviews ?? "",
+      r.phone ?? "",
+      r.address ?? "",
+      r.website ?? "",
+      r.hours ?? "",
+      r.latitude ?? "",
+      r.longitude ?? "",
+      r.maps_url ?? r.mapUrl ?? "",
+    ];
+    if (hasEnriched) {
+      base.push(
+        (r.enriched_emails ?? []).join(", "),
+        (r.enriched_whatsapp ?? []).map((w) => `https://wa.me/${w}`).join(", "),
+        (r.enriched_linkedin ?? [])[0] ?? "",
+        (r.enriched_facebook ?? [])[0] ?? "",
+        (r.enriched_phones ?? []).join(", ")
+      );
+    }
+    return base;
+  });
 }
 
 export async function POST(request) {
@@ -54,7 +69,9 @@ export async function POST(request) {
       );
     }
 
-    const rows = buildRows(results);
+    const hasEnriched = results.some((r) => r.enriched_emails?.length || r.enriched_whatsapp?.length);
+    const COLUMNS = hasEnriched ? [...BASE_COLUMNS, ...ENRICHED_COLUMNS] : BASE_COLUMNS;
+    const rows = buildRows(results, true);
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([COLUMNS, ...rows]);
 
@@ -72,6 +89,9 @@ export async function POST(request) {
       { wch: 12 },
       { wch: 50 },
     ];
+    if (hasEnriched) {
+      colWidths.push({ wch: 32 }, { wch: 28 }, { wch: 45 }, { wch: 40 }, { wch: 25 });
+    }
     ws["!cols"] = colWidths;
     XLSX.utils.book_append_sheet(wb, ws, "Leads");
 

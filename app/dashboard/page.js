@@ -57,6 +57,9 @@ export default function DashboardPage() {
     const [cached, setCached] = useState(false);
     const [recentSearches, setRecentSearches] = useState([]);
     const [packages, setPackages] = useState([]);
+    const [enriching, setEnriching] = useState(false);
+    const [enrichmentStats, setEnrichmentStats] = useState(null);
+    const [searchError, setSearchError] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
 
@@ -102,6 +105,7 @@ export default function DashboardPage() {
     // ── Search Handler ───────────────────────────────────────────────────────
     const handleSearch = async ({ business, locality, provider }) => {
         setSearchLoading(true);
+        setSearchError(null);
         setResults([]);
         setCached(false);
         setLastQuery({ business, locality, provider });
@@ -119,29 +123,57 @@ export default function DashboardPage() {
                     provider: provider === "serpapi" ? "serpapi" : "google_places",
                 }),
             });
+            const data = await res.json().catch(() => ({}));
             if (res.status === 402) {
-                const data = await res.json().catch(() => ({}));
-                alert(data.error || "Insufficient credits");
+                setSearchError(data.error || "Insufficient credits");
                 setSearchLoading(false);
                 return;
             }
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                alert(err.error || "Search failed");
+                setSearchError(data.error || "Search failed");
                 setSearchLoading(false);
                 return;
             }
-            const data = await res.json();
             setResults((data.results ?? []).map(mapResultForTable));
             setCached(data.cached ?? false);
             setCredits(data.credits_remaining ?? credits);
             setTotalSearches((prev) => prev + (data.cached ? 0 : 1));
+            setEnrichmentStats(null);
             await fetchCredits(session?.access_token);
         } catch (e) {
             console.error(e);
-            alert("Search failed. Please try again.");
+            setSearchError("Search failed. Please try again.");
         } finally {
             setSearchLoading(false);
+        }
+    };
+
+    const handleEnrich = async () => {
+        if (!results.length || enriching) return;
+        setEnriching(true);
+        setEnrichmentStats(null);
+        try {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            const res = await fetch("/api/enrich", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${currentSession?.access_token}`,
+                },
+                body: JSON.stringify({ results }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setResults(data.enriched ?? results);
+                setEnrichmentStats(data.stats ?? null);
+            } else {
+                alert(data.error || "Enrichment failed");
+            }
+        } catch (err) {
+            console.error("Enrichment failed:", err);
+            alert("Enrichment failed. Please try again.");
+        } finally {
+            setEnriching(false);
         }
     };
 
@@ -264,35 +296,35 @@ export default function DashboardPage() {
     // ── Loading guard ────────────────────────────────────────────────────────
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-[#020617] text-white dashboard-dark">
             {/* ── Header ────────────────────────────────────────────────────────── */}
-            <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
+            <header className="sticky top-0 z-40 bg-[#020617]/95 border-b border-white/10 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
                             <span className="text-white font-display font-bold text-sm">LF</span>
                         </div>
-                        <span className="font-display font-bold text-lg text-slate-900">LeadFinder</span>
+                        <span className="font-display font-bold text-lg text-white">LeadFinder</span>
                     </Link>
 
                     <div className="flex items-center gap-3">
-                        <CreditBadge credits={credits} />
+                        <CreditBadge credits={credits} variant="dark" />
                         <button
                             onClick={() => setShowModal(true)}
-                            className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors duration-150"
+                            className="bg-[#22c55e] hover:bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors duration-150"
                         >
                             Buy Credits
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                            className="p-2 text-slate-400 hover:text-white transition-colors"
                             title="Log out"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -307,21 +339,38 @@ export default function DashboardPage() {
             <main className="max-w-7xl mx-auto px-6 py-8">
                 {/* Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <StatCard label="Credits Left" value={credits} color="text-brand-500" />
-                    <StatCard label="Total Searches" value={totalSearches} color="text-blue-500" />
-                    <StatCard label="Results Exported" value={totalExports} color="text-purple-500" />
+                    <StatCard label="Credits Left" value={credits} color="text-[#22c55e]" variant="dark" />
+                    <StatCard label="Total Searches" value={totalSearches} color="text-blue-400" variant="dark" />
+                    <StatCard label="Results Exported" value={totalExports} color="text-purple-400" variant="dark" />
                 </div>
 
                 {/* Search Form */}
                 <div className="mb-6">
-                    <SearchForm onSearch={handleSearch} loading={searchLoading} />
+                    <SearchForm onSearch={handleSearch} loading={searchLoading} variant="dark" />
                 </div>
+
+                {/* Search Error Banner */}
+                {searchError && (
+                    <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-300 animate-fade-in">
+                        <span>{searchError}</span>
+                        <button
+                            type="button"
+                            onClick={() => setSearchError(null)}
+                            className="shrink-0 rounded p-1 text-red-400 hover:text-red-200 hover:bg-red-500/20 transition-colors"
+                            aria-label="Dismiss"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
 
                 {/* Loading State */}
                 {searchLoading && (
                     <div className="text-center py-16 animate-fade-in">
-                        <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                        <p className="text-slate-500 font-medium">Searching Google Maps...</p>
+                        <div className="w-10 h-10 border-4 border-[#22c55e] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                        <p className="text-slate-400 font-medium">Searching Google Maps...</p>
                     </div>
                 )}
 
@@ -329,36 +378,54 @@ export default function DashboardPage() {
                 {!searchLoading && results.length > 0 && (
                     <>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 animate-fade-in">
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-medium text-slate-700">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <span className="text-sm font-medium text-slate-300">
                                     {results.length} results found
                                 </span>
                                 {cached ? (
-                                    <span className="bg-blue-50 text-blue-600 text-xs font-medium px-2.5 py-1 rounded-full">
+                                    <span className="bg-blue-500/10 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-500/20">
                                         Cached — 0 credits used
                                     </span>
                                 ) : (
-                                    <span className="text-xs text-slate-400">
+                                    <span className="text-xs text-slate-500">
                                         1 credit used · via {lastQuery?.provider === "google" ? "Google Places" : "SerpAPI"}
+                                    </span>
+                                )}
+                                {enrichmentStats && (
+                                    <span className="bg-[#22c55e]/10 text-[#22c55e] text-xs font-medium px-2.5 py-1 rounded-full border border-[#22c55e]/20">
+                                        ✅ Enriched — {enrichmentStats.emails_found} emails, {enrichmentStats.phones_found} phones{enrichmentStats.whatsapp_found ? `, ${enrichmentStats.whatsapp_found} WhatsApp` : ""} from {enrichmentStats.with_websites} websites
+                                    </span>
+                                )}
+                                {enriching && (
+                                    <span className="text-slate-400 text-xs flex items-center gap-1.5">
+                                        <span className="w-3.5 h-3.5 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
+                                        Enriching websites…
                                     </span>
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
+                                    onClick={handleEnrich}
+                                    disabled={enriching || !results.length || !!enrichmentStats}
+                                    className={`bg-[#6B2D3C] border-2 border-[#5a2530] text-white hover:bg-[#7d3542] hover:border-[#8a3d4a] disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${!enriching && !enrichmentStats && results.length ? "animate-pulse" : ""}`}
+                                >
+                                    {enrichmentStats ? "✅ Enriched" : enriching ? "Enriching…" : "🔍 Enrich Emails"}
+                                </button>
+                                <button
                                     onClick={() => handleExport("excel")}
-                                    className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                                    className="bg-[#22c55e] hover:bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
                                 >
                                     📥 Export Excel
                                 </button>
                                 <button
                                     onClick={() => handleExport("csv")}
-                                    className="border border-slate-200 hover:border-slate-300 text-slate-600 text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                                    className="border border-white/10 hover:border-white/20 text-slate-300 text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
                                 >
                                     📥 CSV
                                 </button>
                             </div>
                         </div>
-                        <ResultsTable results={results} />
+                        <ResultsTable results={results} showEnrichedColumns={!!enrichmentStats} variant="dark" />
                     </>
                 )}
 
@@ -366,18 +433,17 @@ export default function DashboardPage() {
                 {!searchLoading && results.length === 0 && (
                     <div className="text-center py-16 animate-fade-in-up">
                         <div className="text-5xl mb-4">🔍</div>
-                        <h3 className="font-display font-bold text-xl text-slate-800 mb-2">
+                        <h3 className="font-display font-bold text-xl text-white mb-2">
                             Search for businesses
                         </h3>
-                        <p className="text-sm text-slate-500 max-w-md mx-auto mb-8">
+                        <p className="text-sm text-slate-400 max-w-md mx-auto mb-8">
                             Enter a business type and locality above to find leads from Google Maps.
                             Results include phone numbers, addresses, websites, and ratings.
                         </p>
 
-                        {/* Recent Searches */}
                         {recentSearches.length > 0 && (
                             <div>
-                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
                                     Recent Searches
                                 </h4>
                                 <div className="flex flex-wrap justify-center gap-2">
@@ -385,7 +451,7 @@ export default function DashboardPage() {
                                         <button
                                             key={i}
                                             onClick={() => handleSearch({ business: s.business, locality: s.locality, provider: s.provider || "google" })}
-                                            className="bg-white border border-slate-200 hover:border-brand-300 text-slate-600 hover:text-brand-600 text-xs font-medium px-4 py-2 rounded-lg transition-all"
+                                            className="bg-white/5 border border-white/10 hover:border-[#22c55e]/50 text-slate-300 hover:text-[#22c55e] text-xs font-medium px-4 py-2 rounded-lg transition-all"
                                         >
                                             {s.business}{s.locality ? ` in ${s.locality}` : ""} · {s.time}
                                         </button>
@@ -400,27 +466,24 @@ export default function DashboardPage() {
             {/* ── Buy Credits Modal ────────────────────────────────────────────── */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
                         onClick={() => setShowModal(false)}
                     />
 
-                    {/* Modal */}
-                    <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 animate-fade-in-up">
-                        {/* Header */}
+                    <div className="relative bg-[#020617] border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 animate-fade-in-up">
                         <div className="flex items-start justify-between mb-6">
                             <div>
-                                <h2 className="font-display font-bold text-xl text-slate-900">
+                                <h2 className="font-display font-bold text-xl text-white">
                                     Buy Search Credits
                                 </h2>
-                                <p className="text-sm text-slate-500 mt-1">
+                                <p className="text-sm text-slate-400 mt-1">
                                     1 credit = 1 search = up to 20 results
                                 </p>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                                className="text-slate-400 hover:text-white transition-colors p-1"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -428,7 +491,6 @@ export default function DashboardPage() {
                             </button>
                         </div>
 
-                        {/* Package Cards */}
                         <div className="space-y-4 mb-6">
                             {(packages.length ? packages.map(packageForCard) : []).map((pkg) => (
                                 <PackageCard
@@ -436,12 +498,12 @@ export default function DashboardPage() {
                                     pkg={pkg}
                                     popular={pkg.name === "Growth"}
                                     onBuy={handleBuy}
+                                    variant="dark"
                                 />
                             ))}
                         </div>
 
-                        {/* Footer */}
-                        <p className="text-center text-xs text-slate-400">
+                        <p className="text-center text-xs text-slate-500">
                             Secure payments via Razorpay. Credits never expire.
                         </p>
                     </div>

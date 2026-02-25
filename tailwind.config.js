@@ -12,6 +12,9 @@ module.exports = {
         body: ['var(--font-dm)', 'sans-serif'],
       },
       colors: {
+        surface: {
+          950: '#020617',
+        },
         brand: {
           50: '#ecfdf5',
           100: '#d1fae5',
