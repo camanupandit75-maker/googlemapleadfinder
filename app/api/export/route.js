@@ -3,6 +3,8 @@ import { getUser } from "@/lib/auth";
 import { createServerSupabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 
+export const dynamic = "force-dynamic";
+
 const BASE_COLUMNS = [
   "S.No",
   "Name",

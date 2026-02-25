@@ -4,6 +4,8 @@ import { createServerSupabase } from "@/lib/supabase";
 import { addCredits } from "@/lib/credits";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+
 function verifySignature(orderId, paymentId, signature, secret) {
   const body = `${orderId}|${paymentId}`;
   const expected = crypto

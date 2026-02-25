@@ -3,6 +3,8 @@ import { getUser } from "@/lib/auth";
 import { createServerSupabase } from "@/lib/supabase";
 import Razorpay from "razorpay";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request) {
   try {
     const user = await getUser(request);

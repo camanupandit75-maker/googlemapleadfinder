@@ -9,6 +9,8 @@ import {
   getUserCredits,
 } from "@/lib/credits";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request) {
   try {
     const user = await getUser(request);

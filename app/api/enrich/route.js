@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { batchExtractContacts } from "@/lib/enrichment";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request) {
   try {
     const user = await getUser(request);

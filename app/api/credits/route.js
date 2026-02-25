@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { createAuthServerSupabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const user = await getUser(request);
