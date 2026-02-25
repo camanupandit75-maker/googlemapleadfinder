@@ -20,48 +20,89 @@ const USE_CASES = [
   { title: "Startups & SMBs", desc: "Research competitors, vendors, and collaborators in your market area." },
 ];
 
+const FLOATING_PINS = [
+  { top: "18%", left: "12%", size: 56, delay: "0s", opacity: 0.05 },
+  { top: "35%", left: "88%", size: 40, delay: "1.2s", opacity: 0.04 },
+  { top: "55%", left: "8%", size: 72, delay: "2.5s", opacity: 0.06 },
+  { top: "25%", left: "78%", size: 48, delay: "0.8s", opacity: 0.04 },
+  { top: "48%", left: "92%", size: 64, delay: "3s", opacity: 0.05 },
+  { top: "62%", left: "15%", size: 44, delay: "1.8s", opacity: 0.05 },
+];
+
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <Navbar variant="dark" />
+    <div className="min-h-screen bg-slate-950 text-white landing-bg-dots relative overflow-x-hidden">
+      {/* Noise texture overlay (below content) */}
+      <div className="fixed inset-0 z-0 landing-noise" aria-hidden />
 
-      {/* Hero Section */}
-      <section className="max-w-4xl mx-auto px-6 pt-20 pb-24 text-center animate-fade-in-up">
-        {/* Badge */}
-        <div className="inline-block mb-6">
-          <span className="bg-brand-500/10 text-brand-400 text-sm font-medium px-4 py-1.5 rounded-full border border-brand-500/20">
-            10 free searches on signup
+      {/* Gradient orb behind hero */}
+      <div
+        className="absolute left-1/2 top-[15%] -translate-x-1/2 landing-orb z-0 pointer-events-none"
+        aria-hidden
+      />
+
+      <div className="relative z-10">
+        <Navbar variant="dark" />
+
+      {/* Hero Section with map grid + floating pins */}
+      <section className="relative min-h-[70vh] flex flex-col">
+        {/* Map grid lines (hero only, fade at bottom) */}
+        <div className="absolute inset-0 h-[70vh] landing-hero-grid z-0 pointer-events-none" aria-hidden />
+        {/* Floating map pins */}
+        {FLOATING_PINS.map((pin, i) => (
+          <span
+            key={i}
+            className="absolute landing-pin-float z-0 pointer-events-none select-none"
+            style={{
+              top: pin.top,
+              left: pin.left,
+              fontSize: `${pin.size}px`,
+              opacity: pin.opacity,
+              animationDelay: pin.delay,
+            }}
+            aria-hidden
+          >
+            📍
           </span>
-        </div>
+        ))}
+        {/* Hero content */}
+        <div className="relative z-10 max-w-4xl mx-auto px-6 pt-20 pb-24 text-center animate-fade-in-up flex-1">
+          {/* Badge */}
+          <div className="inline-block mb-6">
+            <span className="bg-brand-500/10 text-brand-400 text-sm font-medium px-4 py-1.5 rounded-full border border-brand-500/20">
+              10 free searches on signup
+            </span>
+          </div>
 
-        <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-tight mb-6 tracking-tight">
-          Find business leads{" "}
-          <span className="text-brand-400">from Google Maps</span>
-        </h1>
+          <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-tight mb-6 tracking-tight">
+            Find business leads{" "}
+            <span className="text-brand-400">from Google Maps</span>
+          </h1>
 
-        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Search any locality or PIN code to discover chartered accountants, law firms,
-          restaurants, and thousands more. Get phone numbers, addresses, ratings —
-          and export everything to Excel.
-        </p>
+          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Search any locality or PIN code to discover chartered accountants, law firms,
+            restaurants, and thousands more. Get phone numbers, addresses, ratings —
+            and export everything to Excel.
+          </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            href="/signup"
-            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-xl text-base transition-colors duration-150 shadow-lg shadow-brand-500/25"
-          >
-            Start Searching — It&apos;s Free
-          </Link>
-          <Link
-            href="/pricing"
-            className="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-medium px-8 py-3.5 rounded-xl text-base transition-all duration-150"
-          >
-            View Pricing
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/signup"
+              className="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-xl text-base transition-colors duration-150 shadow-lg shadow-brand-500/25"
+            >
+              Start Searching — It&apos;s Free
+            </Link>
+            <Link
+              href="/pricing"
+              className="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-medium px-8 py-3.5 rounded-xl text-base transition-all duration-150"
+            >
+              View Pricing
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Features Grid */}
+        {/* Features Grid */}
       <section className="max-w-5xl mx-auto px-6 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f, i) => (
@@ -80,7 +121,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Use Cases */}
+        {/* Use Cases */}
       <section className="max-w-4xl mx-auto px-6 pb-24">
         <h2 className="font-display font-bold text-3xl text-center mb-10 animate-fade-in">
           Who is this for?
@@ -101,7 +142,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 }
