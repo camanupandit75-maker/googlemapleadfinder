@@ -48,9 +48,9 @@ export default function PricingPage() {
                         return (
                             <div
                                 key={pkg.id}
-                                className={`relative rounded-2xl border p-6 transition-all duration-200 hover:scale-105 animate-fade-in-up ${isPopular
-                                        ? "border-brand-500 bg-white/10 shadow-lg shadow-brand-500/10"
-                                        : "border-white/10 bg-white/5 hover:border-white/20"
+                                className={`relative p-6 transition-all duration-200 hover:scale-105 animate-fade-in-up ${isPopular
+                                        ? "glass-card border-brand-500 shadow-lg shadow-brand-500/10"
+                                        : "glass-card"
                                     }`}
                                 style={{ animationDelay: `${i * 100}ms` }}
                             >
@@ -113,7 +113,7 @@ export default function PricingPage() {
                     {FAQS.map((faq, i) => (
                         <div
                             key={i}
-                            className="bg-white/5 border border-white/10 rounded-xl overflow-hidden animate-fade-in-up"
+                            className="glass-card overflow-hidden animate-fade-in-up"
                             style={{ animationDelay: `${i * 60}ms` }}
                         >
                             <button

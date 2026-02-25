@@ -6,7 +6,7 @@ export default function ResultsTable({ results = [], showEnrichedColumns = false
     const hasEnriched = showEnrichedColumns && results.some((r) => r.enrichment_status || r.enriched_emails?.length);
     const isDark = variant === "dark";
 
-    const tableWrap = isDark ? "bg-white/5 rounded-2xl border border-white/10 overflow-hidden animate-fade-in" : "bg-white rounded-2xl border border-slate-200 overflow-hidden animate-fade-in";
+    const tableWrap = isDark ? "glass-card overflow-hidden animate-fade-in" : "bg-white rounded-2xl border border-slate-200 overflow-hidden animate-fade-in";
     const theadTr = isDark ? "border-b border-white/10 bg-white/5" : "border-b border-slate-100 bg-slate-50";
     const thClass = isDark ? "px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider" : "px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider";
     const rowClass = isDark ? "border-b border-white/10 hover:bg-white/5 transition-colors duration-150 stagger-row" : "border-b border-slate-50 hover:bg-emerald-50/50 transition-colors duration-150 stagger-row";

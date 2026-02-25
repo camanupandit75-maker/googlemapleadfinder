@@ -67,7 +67,7 @@ export default function LandingPage() {
           {FEATURES.map((f, i) => (
             <div
               key={f.title}
-              className="group bg-white/5 border border-white/10 hover:border-brand-500/50 rounded-xl p-6 transition-all duration-200 animate-fade-in-up"
+              className="group glass-card p-6 transition-all duration-200 animate-fade-in-up hover:border-brand-500/50"
               style={{ animationDelay: `${i * 80}ms` }}
             >
               <span className="text-2xl mb-3 block">{f.emoji}</span>
@@ -89,7 +89,7 @@ export default function LandingPage() {
           {USE_CASES.map((uc, i) => (
             <div
               key={uc.title}
-              className="border-l-4 border-brand-500 bg-white/5 rounded-r-xl pl-5 pr-6 py-5 animate-fade-in-up"
+              className="border-l-4 border-brand-500 glass-card rounded-r-2xl pl-5 pr-6 py-5 animate-fade-in-up"
               style={{ animationDelay: `${i * 100}ms` }}
             >
               <h3 className="font-display font-semibold text-lg text-white mb-1">

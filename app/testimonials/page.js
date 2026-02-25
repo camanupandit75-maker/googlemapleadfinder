@@ -79,7 +79,7 @@ export default function TestimonialsPage() {
           {TESTIMONIALS.map((t, i) => (
             <div
               key={i}
-              className="bg-white/5 border border-white/10 rounded-2xl p-6 animate-fade-in-up"
+              className="glass-card p-6 animate-fade-in-up"
               style={{ animationDelay: `${i * 50}ms` }}
             >
               <p className="text-slate-300 text-lg leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>

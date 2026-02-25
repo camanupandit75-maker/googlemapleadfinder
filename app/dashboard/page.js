@@ -483,7 +483,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Filter bar */}
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-4 mb-4 flex flex-wrap items-center gap-3">
+                        <div className="glass-card p-4 mb-4 flex flex-wrap items-center gap-3">
                             <input
                                 type="text"
                                 value={filterName}
@@ -594,7 +594,7 @@ export default function DashboardPage() {
                         onClick={() => setShowModal(false)}
                     />
 
-                    <div className="relative bg-[#020617] border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 animate-fade-in-up">
+                    <div className="relative glass-card bg-[#020617]/95 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 animate-fade-in-up">
                         <div className="flex items-start justify-between mb-6">
                             <div>
                                 <h2 className="font-display font-bold text-xl text-white">

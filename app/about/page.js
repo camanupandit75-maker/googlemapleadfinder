@@ -45,7 +45,7 @@ export default function AboutPage() {
             {STATS.map((stat, i) => (
               <div
                 key={stat.label}
-                className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center animate-fade-in-up"
+                className="glass-card p-6 text-center animate-fade-in-up"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 <p className="font-display font-bold text-2xl text-[#22c55e] mb-1">{stat.value}</p>

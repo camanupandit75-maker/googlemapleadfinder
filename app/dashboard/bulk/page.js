@@ -492,7 +492,7 @@ export default function BulkSearchPage() {
         </p>
 
         {/* Step 1 — Upload */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
+        <div className="glass-card p-6 mb-8">
           <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Step 1 — Upload</h2>
 
           {rows.length === 0 ? (
@@ -501,7 +501,7 @@ export default function BulkSearchPage() {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${dragActive ? "border-[#22c55e]/50 bg-[#22c55e]/5" : "border-white/10 hover:border-white/20"}`}
+                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-colors ${dragActive ? "border-[#22c55e]/50 bg-[#22c55e]/5" : "border-white/10 hover:border-white/20"}`}
               >
                 <p className="text-slate-400 mb-4">Drag and drop your file here, or click to browse</p>
                 <p className="text-xs text-slate-500 mb-4">Accepts .csv and .xlsx</p>
@@ -510,7 +510,7 @@ export default function BulkSearchPage() {
                   Choose file
                 </label>
               </div>
-              <div className="mt-4 p-4 rounded-lg bg-white/5 border border-white/10">
+              <div className="mt-4 p-4 glass-card">
                 <p className="text-xs font-semibold text-slate-400 mb-2">Sample format:</p>
                 <pre className="text-xs text-slate-500 font-mono whitespace-pre-wrap">
 {`business_type,location
@@ -582,7 +582,7 @@ Chartered Accountants,Business Bay Dubai`}
 
         {/* Step 2 — Processing */}
         {rows.length > 0 && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
+          <div className="glass-card p-6 mb-8">
             <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Step 2 — Processing</h2>
 
             {pauseReason === "insufficient_credits" && (
@@ -673,22 +673,22 @@ Chartered Accountants,Business Bay Dubai`}
 
         {/* Step 3 — Results */}
         {hasResults && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
+          <div className="glass-card p-6 mb-8">
             <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Step 3 — Results</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <div className="glass-card p-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Total Searches</p>
                 <p className="text-2xl font-bold text-white">{rows.length}</p>
               </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <div className="glass-card p-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Total Results</p>
                 <p className="text-2xl font-bold text-[#22c55e]">{allResults.length}</p>
               </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <div className="glass-card p-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Credits used</p>
                 <p className="text-2xl font-bold text-blue-400">{creditsUsed} {cachedCount > 0 && `(${cachedCount} cached)`}</p>
               </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <div className="glass-card p-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Emails found</p>
                 <p className="text-2xl font-bold text-purple-400">{enrichmentStats?.emails_found ?? allResults.reduce((s, r) => s + (r.enriched_emails?.length ?? 0), 0)}</p>
               </div>
@@ -721,7 +721,7 @@ Chartered Accountants,Business Bay Dubai`}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative bg-[#020617] border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7">
+          <div className="relative glass-card bg-[#020617]/95 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="font-display font-bold text-xl text-white">Buy Search Credits</h2>

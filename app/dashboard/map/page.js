@@ -352,7 +352,7 @@ export default function MarketMapPage() {
           Scan localities in a city to see business density. Find underserved areas or competitive hotspots.
         </p>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
+        <div className="glass-card p-6 mb-8">
           <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Controls</h2>
           <div className="flex flex-wrap items-end gap-4">
             <div>
@@ -405,7 +405,7 @@ export default function MarketMapPage() {
         </div>
 
         {scanning && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
+          <div className="glass-card p-6 mb-8">
             <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Scanning Progress</h2>
             <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden mb-4">
               <div
@@ -445,9 +445,9 @@ export default function MarketMapPage() {
 
         {localityResults.length > 0 && (
           <>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
+            <div className="glass-card p-6 mb-8">
               <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Map</h2>
-              <div className="rounded-xl overflow-hidden border border-white/10" style={{ height: 420 }}>
+              <div className="glass-card overflow-hidden" style={{ height: 420 }}>
                 <MapDisplay
                   center={mapCenter}
                   localityResults={localityResults}
@@ -458,7 +458,7 @@ export default function MarketMapPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8 overflow-x-auto">
+            <div className="glass-card p-6 mb-8 overflow-x-auto">
               <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Results by Locality</h2>
               <table className="w-full text-sm">
                 <thead>
@@ -490,7 +490,7 @@ export default function MarketMapPage() {
               </table>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8">
+            <div className="glass-card p-6 mb-8">
               <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Insights</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {mostCompetitive && (

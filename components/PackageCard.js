@@ -4,11 +4,11 @@ export default function PackageCard({ pkg, popular = false, onBuy, variant = "li
     const isDark = variant === "dark";
     return (
         <div
-            className={`relative rounded-2xl border p-6 transition-all duration-200 hover:scale-[1.03] ${popular
-                    ? "border-[#22c55e] bg-white/10 shadow-lg shadow-brand-500/10"
+            className={`relative p-6 transition-all duration-200 hover:scale-[1.03] ${popular
+                    ? "glass-card border-[#22c55e] shadow-lg shadow-brand-500/10"
                     : isDark
-                        ? "border-white/10 bg-white/5 hover:border-white/20"
-                        : "border-slate-200 bg-white hover:border-slate-300"
+                        ? "glass-card"
+                        : "rounded-2xl border border-slate-200 bg-white hover:border-slate-300"
                 }`}
         >
             {popular && (

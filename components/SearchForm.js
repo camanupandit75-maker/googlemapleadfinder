@@ -36,7 +36,7 @@ export default function SearchForm({ onSearch, loading = false, variant = "light
     };
 
     return (
-        <div className={`rounded-2xl border p-6 animate-fade-in-up ${isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-200"}`}>
+        <div className={`p-6 animate-fade-in-up ${isDark ? "glass-card" : "rounded-2xl border bg-white border-slate-200"}`}>
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                     <div className="md:col-span-5">
