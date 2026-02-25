@@ -362,6 +362,9 @@ export default function DashboardPage() {
                             <Link href="/dashboard/bulk" className="text-slate-400 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
                                 Bulk Search
                             </Link>
+                            <Link href="/dashboard/map" className="text-slate-400 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                                Market Map
+                            </Link>
                         </nav>
                     </div>
 
