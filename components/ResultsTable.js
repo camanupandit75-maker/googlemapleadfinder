@@ -1,6 +1,6 @@
 "use client";
 
-export default function ResultsTable({ results = [], showEnrichedColumns = false, variant = "light" }) {
+export default function ResultsTable({ results = [], showEnrichedColumns = false, showSourceQuery = false, variant = "light" }) {
     if (results.length === 0) return null;
 
     const hasEnriched = showEnrichedColumns && results.some((r) => r.enrichment_status || r.enriched_emails?.length);
@@ -21,6 +21,9 @@ export default function ResultsTable({ results = [], showEnrichedColumns = false
                     <thead>
                         <tr className={theadTr}>
                             <th className={`${thClass} w-10`}>#</th>
+                            {showSourceQuery && (
+                                <th className={`${thClass} min-w-[180px]`}>Source Query</th>
+                            )}
                             <th className={`${thClass} min-w-[200px]`}>Business Name</th>
                             <th className={`${thClass} min-w-[140px]`}>Category</th>
                             <th className={`${thClass} min-w-[120px]`}>Rating</th>
@@ -45,6 +48,11 @@ export default function ResultsTable({ results = [], showEnrichedColumns = false
                                 style={{ animationDelay: `${index * 30}ms` }}
                             >
                                 <td className={`px-4 py-3.5 ${tdMuted} font-medium`}>{index + 1}</td>
+                                {showSourceQuery && (
+                                    <td className={`px-4 py-3.5 ${tdSec} text-xs`}>
+                                        {[item.source_query, item.source_location].filter(Boolean).join(" · ") || "—"}
+                                    </td>
+                                )}
                                 <td className={`px-4 py-3.5 font-semibold ${tdMain}`}>
                                     <span className="flex items-center gap-1.5">
                                         {hasEnriched && item.enrichment_status === "found" && (

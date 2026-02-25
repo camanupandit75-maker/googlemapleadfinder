@@ -307,12 +307,22 @@ export default function DashboardPage() {
             {/* ── Header ────────────────────────────────────────────────────────── */}
             <header className="sticky top-0 z-40 bg-[#020617]/95 border-b border-white/10 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
-                            <span className="text-white font-display font-bold text-sm">LF</span>
-                        </div>
-                        <span className="font-display font-bold text-lg text-white">LeadFinder</span>
-                    </Link>
+                    <div className="flex items-center gap-6">
+                        <Link href="/" className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
+                                <span className="text-white font-display font-bold text-sm">LF</span>
+                            </div>
+                            <span className="font-display font-bold text-lg text-white">LeadFinder</span>
+                        </Link>
+                        <nav className="flex items-center gap-1">
+                            <Link href="/dashboard" className="bg-white/10 text-white text-sm font-medium px-3 py-1.5 rounded-lg">
+                                Search
+                            </Link>
+                            <Link href="/dashboard/bulk" className="text-slate-400 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                                Bulk Search
+                            </Link>
+                        </nav>
+                    </div>
 
                     <div className="flex items-center gap-3">
                         <CreditBadge credits={credits} variant="dark" />
@@ -436,10 +446,16 @@ export default function DashboardPage() {
                         <h3 className="font-display font-bold text-xl text-white mb-2">
                             Search for businesses
                         </h3>
-                        <p className="text-sm text-slate-400 max-w-md mx-auto mb-8">
+                        <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
                             Enter a business type and locality above to find leads from Google Maps.
                             Results include phone numbers, addresses, websites, and ratings.
                         </p>
+                        <Link
+                            href="/dashboard/bulk"
+                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-[#22c55e]/30 text-slate-300 hover:text-white text-sm font-medium px-5 py-2.5 mb-8 transition-colors"
+                        >
+                            📤 Bulk Search — upload CSV
+                        </Link>
 
                         {recentSearches.length > 0 && (
                             <div>
