@@ -19,7 +19,7 @@ export default function Footer() {
         </Link>
       </div>
       <p className="text-sm text-slate-500">
-        © {new Date().getFullYear()} LeadFinder · Built by Trutech Finance Consultants
+        © {new Date().getFullYear()} LeadFinder · Built by Bharat AI Academy
       </p>
     </footer>
   );
