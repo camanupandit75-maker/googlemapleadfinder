@@ -99,6 +99,9 @@ export default function MarketMapPage() {
   const [localityResults, setLocalityResults] = useState([]);
   const [totalBusinesses, setTotalBusinesses] = useState(0);
   const [allResults, setAllResults] = useState([]);
+  const [careerScanning, setCareerScanning] = useState(false);
+  const [careerScanStats, setCareerScanStats] = useState(null);
+  const [careerScanDialog, setCareerScanDialog] = useState(false);
 
   const fetchCredits = useCallback(async (token) => {
     if (!token) return;
@@ -285,6 +288,58 @@ export default function MarketMapPage() {
     }
   };
 
+  const handleCareerScanClick = () => {
+    const withWebsites = allResults.filter((r) => !!(r.website ?? "").trim());
+    if (!withWebsites.length || careerScanning) return;
+    setCareerScanDialog(true);
+  };
+
+  const confirmCareerScan = async () => {
+    const withWebsites = allResults.filter((r) => !!(r.website ?? "").trim());
+    if (!withWebsites.length || careerScanning) return;
+    setCareerScanDialog(false);
+    setCareerScanning(true);
+    setCareerScanStats(null);
+    try {
+      const res = await fetch("/api/career-scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ results: allResults }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const merged = data.results ?? [];
+        const mergedMap = new Map();
+        merged.forEach((r) => {
+          const key = [r.source_query, r.source_location, r.name].filter(Boolean).join("|");
+          if (key) mergedMap.set(key, r);
+        });
+        setAllResults(merged);
+        setLocalityResults((prev) =>
+          prev.map((loc) => ({
+            ...loc,
+            results: (loc.results ?? []).map((row) => {
+              const key = [row.source_query, row.source_location, row.name].filter(Boolean).join("|");
+              return mergedMap.get(key) ?? row;
+            }),
+          }))
+        );
+        setCareerScanStats(data.stats ?? null);
+        await fetchCredits(session?.access_token);
+      } else {
+        alert(data.error || "Career scan failed");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Career scan failed. Please try again.");
+    } finally {
+      setCareerScanning(false);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
@@ -295,6 +350,13 @@ export default function MarketMapPage() {
   const opportunityZone = sortedResults.filter((r) => r.count > 0).pop();
   const highestRated = [...localityResults].filter((r) => r.avgRating != null).sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0))[0];
   const bestPhoneCoverage = [...localityResults].filter((r) => r.count > 0).sort((a, b) => (b.withPhone / b.count) - (a.withPhone / a.count))[0];
+  const hiringByLocality = localityResults.map((loc) => ({
+    locality: loc.locality,
+    hiring: (loc.results ?? []).filter((r) => r.is_hiring === true).length,
+  }));
+  const totalHiring = hiringByLocality.reduce((s, x) => s + x.hiring, 0);
+  const localitiesWithHiring = hiringByLocality.filter((x) => x.hiring > 0).length;
+  const topHiringArea = [...hiringByLocality].sort((a, b) => b.hiring - a.hiring)[0];
 
   const mapCenter = city === "Custom" ? { lat: 28.6139, lng: 77.209, zoom: 10 } : (CITY_CENTERS[city] || { lat: 28.6139, lng: 77.209, zoom: 11 });
 
@@ -469,6 +531,9 @@ export default function MarketMapPage() {
                     <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Avg Rating</th>
                     <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">With Phone</th>
                     <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">With Website</th>
+                    {careerScanStats && (
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Hiring</th>
+                    )}
                     <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Top Business</th>
                   </tr>
                 </thead>
@@ -483,6 +548,11 @@ export default function MarketMapPage() {
                       <td className="px-4 py-3 text-slate-300">{r.avgRating ?? "—"}</td>
                       <td className="px-4 py-3 text-slate-300">{r.withPhone}</td>
                       <td className="px-4 py-3 text-slate-300">{r.withWebsite}</td>
+                      {careerScanStats && (
+                        <td className="px-4 py-3 text-cyan-400">
+                          {hiringByLocality.find((h) => h.locality === r.locality)?.hiring ?? 0}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-slate-400 truncate max-w-[180px]">{r.topBusinesses?.[0] ?? "—"}</td>
                     </tr>
                   ))}
@@ -493,6 +563,16 @@ export default function MarketMapPage() {
             <div className="glass-card p-6 mb-8">
               <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Insights</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {careerScanStats && totalHiring > 0 && (
+                  <p className="text-slate-300">
+                    🏢 Actively Hiring: <span className="text-white font-medium">{totalHiring} businesses</span> across {localitiesWithHiring} localities
+                  </p>
+                )}
+                {careerScanStats && topHiringArea?.hiring > 0 && (
+                  <p className="text-slate-300">
+                    📋 Top Hiring Area: <span className="text-white font-medium">{topHiringArea.locality}</span> ({topHiringArea.hiring} businesses hiring)
+                  </p>
+                )}
                 {mostCompetitive && (
                   <p className="text-slate-300">
                     🔥 Most Competitive: <span className="text-white font-medium">{mostCompetitive.locality}</span> ({mostCompetitive.count} {businessType} found)
@@ -516,7 +596,7 @@ export default function MarketMapPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-6">
               <button
                 onClick={handleExportMapData}
                 className="bg-[#22c55e] hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg"
@@ -529,7 +609,45 @@ export default function MarketMapPage() {
               >
                 Export All Leads to Excel
               </button>
+              <button
+                onClick={handleCareerScanClick}
+                disabled={careerScanning || !allResults.some((r) => !!(r.website ?? "").trim()) || !!careerScanStats}
+                className="border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                {careerScanStats ? "✅ Scan All for Hiring" : careerScanning ? "Scanning…" : "🏢 Scan All for Hiring"}
+              </button>
             </div>
+            {careerScanStats && (
+              <p className="text-cyan-400/90 text-sm mb-6">
+                🏢 Career Scan: {careerScanStats.hiring} actively hiring, {careerScanStats.with_job_titles} with job listings | {careerScanStats.credits_used} credit{careerScanStats.credits_used !== 1 ? "s" : ""} used
+              </p>
+            )}
+
+            {/* Career Scan Confirmation Dialog */}
+            {careerScanDialog && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setCareerScanDialog(false)} />
+                <div className="relative glass-card bg-[#020617]/95 shadow-2xl max-w-md w-full p-6">
+                  <h2 className="font-display font-bold text-lg text-white mb-2">🏢 Scan All for Hiring</h2>
+                  <p className="text-slate-400 text-sm mb-4">
+                    Scan {allResults.filter((r) => !!(r.website ?? "").trim()).length} businesses across all localities.
+                    <br />
+                    Cost: <span className="text-cyan-400 font-semibold">{Math.ceil(allResults.filter((r) => !!(r.website ?? "").trim()).length / 10)} credits</span> (1 per 10 businesses)
+                  </p>
+                  <p className="text-slate-300 text-sm mb-6">
+                    Your balance: <span className="text-[#22c55e] font-semibold">{credits} credits</span>
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setCareerScanDialog(false)} className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white border border-white/10 rounded-lg">
+                      Cancel
+                    </button>
+                    <button onClick={confirmCareerScan} className="px-4 py-2 text-sm font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg">
+                      Scan Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>

@@ -61,10 +61,14 @@ export default function DashboardPage() {
     const [filterHasPhone, setFilterHasPhone] = useState(false);
     const [filterHasEmail, setFilterHasEmail] = useState(false);
     const [filterHasWebsite, setFilterHasWebsite] = useState(false);
+    const [filterIsHiring, setFilterIsHiring] = useState(false);
     const [recentSearches, setRecentSearches] = useState([]);
     const [packages, setPackages] = useState([]);
     const [enriching, setEnriching] = useState(false);
     const [enrichmentStats, setEnrichmentStats] = useState(null);
+    const [careerScanning, setCareerScanning] = useState(false);
+    const [careerScanStats, setCareerScanStats] = useState(null);
+    const [careerScanDialog, setCareerScanDialog] = useState(false);
     const [searchError, setSearchError] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
@@ -84,10 +88,11 @@ export default function DashboardPage() {
         if (filterHasPhone) list = list.filter((r) => !!(r.phone ?? "").trim());
         if (filterHasEmail) list = list.filter((r) => (r.enriched_emails?.length ?? 0) > 0);
         if (filterHasWebsite) list = list.filter((r) => !!(r.website ?? "").trim());
+        if (filterIsHiring) list = list.filter((r) => r.is_hiring === true);
         return list;
-    }, [results, filterName, filterMinRating, filterHasPhone, filterHasEmail, filterHasWebsite]);
+    }, [results, filterName, filterMinRating, filterHasPhone, filterHasEmail, filterHasWebsite, filterIsHiring]);
 
-    const hasActiveFilters = !!(filterName.trim() || filterMinRating || filterHasPhone || filterHasEmail || filterHasWebsite);
+    const hasActiveFilters = !!(filterName.trim() || filterMinRating || filterHasPhone || filterHasEmail || filterHasWebsite || filterIsHiring);
 
     const resetFilters = () => {
         setFilterName("");
@@ -95,6 +100,7 @@ export default function DashboardPage() {
         setFilterHasPhone(false);
         setFilterHasEmail(false);
         setFilterHasWebsite(false);
+        setFilterIsHiring(false);
     };
 
     const fetchCredits = async (token) => {
@@ -148,6 +154,7 @@ export default function DashboardPage() {
         setFilterHasPhone(false);
         setFilterHasEmail(false);
         setFilterHasWebsite(false);
+        setFilterIsHiring(false);
 
         try {
             const res = await fetch("/api/search", {
@@ -179,6 +186,7 @@ export default function DashboardPage() {
             setCredits(data.credits_remaining ?? credits);
             setTotalSearches((prev) => prev + (data.cached ? 0 : 1));
             setEnrichmentStats(null);
+            setCareerScanStats(null);
             setLastQuery((prev) => prev ? { ...prev, creditsUsed: data.credits_used ?? 1 } : null);
             await fetchCredits(session?.access_token);
         } catch (e) {
@@ -215,6 +223,44 @@ export default function DashboardPage() {
             alert("Enrichment failed. Please try again.");
         } finally {
             setEnriching(false);
+        }
+    };
+
+    const handleCareerScan = async () => {
+        const withWebsites = results.filter((r) => !!(r.website ?? "").trim());
+        if (!withWebsites.length || careerScanning) return;
+        setCareerScanDialog(true);
+    };
+
+    const confirmCareerScan = async () => {
+        const withWebsites = results.filter((r) => !!(r.website ?? "").trim());
+        if (!withWebsites.length || careerScanning) return;
+        setCareerScanDialog(false);
+        setCareerScanning(true);
+        setCareerScanStats(null);
+        try {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            const res = await fetch("/api/career-scan", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${currentSession?.access_token}`,
+                },
+                body: JSON.stringify({ results }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setResults(data.results ?? results);
+                setCareerScanStats(data.stats ?? null);
+                await fetchCredits(currentSession?.access_token);
+            } else {
+                alert(data.error || "Career scan failed");
+            }
+        } catch (err) {
+            console.error("Career scan failed:", err);
+            alert("Career scan failed. Please try again.");
+        } finally {
+            setCareerScanning(false);
         }
     };
 
@@ -456,6 +502,17 @@ export default function DashboardPage() {
                                         Enriching websites…
                                     </span>
                                 )}
+                                {careerScanning && (
+                                    <span className="text-slate-400 text-xs flex items-center gap-1.5">
+                                        <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                                        🏢 Scanning websites for career pages…
+                                    </span>
+                                )}
+                                {careerScanStats && (
+                                    <span className="bg-cyan-500/10 text-cyan-400 text-xs font-medium px-2.5 py-1 rounded-full border border-cyan-500/20">
+                                        🏢 Career Scan: {careerScanStats.hiring} actively hiring, {careerScanStats.with_job_titles} with job listings | {careerScanStats.credits_used} credit{careerScanStats.credits_used !== 1 ? "s" : ""} used
+                                    </span>
+                                )}
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
@@ -464,6 +521,13 @@ export default function DashboardPage() {
                                     className={`bg-[#6B2D3C] border-2 border-[#5a2530] text-white hover:bg-[#7d3542] hover:border-[#8a3d4a] disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${!enriching && !enrichmentStats && results.length ? "animate-pulse" : ""}`}
                                 >
                                     {enrichmentStats ? "✅ Enriched" : enriching ? "Enriching…" : "🔍 Enrich Emails"}
+                                </button>
+                                <button
+                                    onClick={handleCareerScan}
+                                    disabled={careerScanning || !results.length || !!careerScanStats || !results.some((r) => !!(r.website ?? "").trim())}
+                                    className="border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                                >
+                                    {careerScanStats ? "✅ Scan Hiring" : careerScanning ? "Scanning…" : "🏢 Scan Hiring"}
                                 </button>
                                 <button
                                     onClick={() => handleExport("excel")}
@@ -531,6 +595,17 @@ export default function DashboardPage() {
                                 />
                                 Has Website
                             </label>
+                            {careerScanStats && (
+                                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={filterIsHiring}
+                                        onChange={(e) => setFilterIsHiring(e.target.checked)}
+                                        className="rounded border-white/20 text-cyan-400 focus:ring-cyan-400"
+                                    />
+                                    Is Hiring
+                                </label>
+                            )}
                             {hasActiveFilters && (
                                 <button
                                     type="button"
@@ -542,7 +617,7 @@ export default function DashboardPage() {
                             )}
                         </div>
 
-                        <ResultsTable results={filteredResults} showEnrichedColumns={!!enrichmentStats} variant="dark" />
+                        <ResultsTable results={filteredResults} showEnrichedColumns={!!enrichmentStats} showCareerColumns={!!careerScanStats} variant="dark" />
                     </>
                 )}
 
@@ -629,6 +704,41 @@ export default function DashboardPage() {
                         <p className="text-center text-xs text-slate-500">
                             Secure payments via Razorpay. Credits never expire.
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Career Scan Confirmation Dialog ───────────────────────────── */}
+            {careerScanDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
+                        onClick={() => setCareerScanDialog(false)}
+                    />
+                    <div className="relative glass-card bg-[#020617]/95 shadow-2xl max-w-md w-full p-6 animate-fade-in-up">
+                        <h2 className="font-display font-bold text-lg text-white mb-2">🏢 Scan for Hiring</h2>
+                        <p className="text-slate-400 text-sm mb-4">
+                            Scan {results.filter((r) => !!(r.website ?? "").trim()).length} businesses for career pages.
+                            <br />
+                            Cost: <span className="text-cyan-400 font-semibold">{Math.ceil(results.filter((r) => !!(r.website ?? "").trim()).length / 10)} credits</span> (1 per 10 businesses)
+                        </p>
+                        <p className="text-slate-300 text-sm mb-6">
+                            Your balance: <span className="text-[#22c55e] font-semibold">{credits} credits</span>
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setCareerScanDialog(false)}
+                                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white border border-white/10 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmCareerScan}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-colors"
+                            >
+                                Scan Now
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

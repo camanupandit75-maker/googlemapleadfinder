@@ -1,9 +1,10 @@
 "use client";
 
-export default function ResultsTable({ results = [], showEnrichedColumns = false, showSourceQuery = false, variant = "light" }) {
+export default function ResultsTable({ results = [], showEnrichedColumns = false, showCareerColumns = false, showSourceQuery = false, variant = "light" }) {
     if (results.length === 0) return null;
 
     const hasEnriched = showEnrichedColumns && results.some((r) => r.enrichment_status || r.enriched_emails?.length);
+    const hasCareer = showCareerColumns && results.some((r) => r.is_hiring != null || r.hiring_confidence);
     const isDark = variant === "dark";
 
     const tableWrap = isDark ? "glass-card overflow-hidden animate-fade-in" : "bg-white rounded-2xl border border-slate-200 overflow-hidden animate-fade-in";
@@ -35,6 +36,13 @@ export default function ResultsTable({ results = [], showEnrichedColumns = false
                                     <th className={`${thClass} min-w-[140px]`}>Email</th>
                                     <th className={`${thClass} w-20`}>WhatsApp</th>
                                     <th className={`${thClass} w-24`}>Socials</th>
+                                </>
+                            )}
+                            {hasCareer && (
+                                <>
+                                    <th className={`${thClass} min-w-[120px]`}>Hiring</th>
+                                    <th className={`${thClass} w-20`}>Careers</th>
+                                    <th className={`${thClass} min-w-[160px]`}>Jobs</th>
                                 </>
                             )}
                             <th className={`${thClass} w-16`}>Map</th>
@@ -155,6 +163,44 @@ export default function ResultsTable({ results = [], showEnrichedColumns = false
                                                     <span className={tdMuted}>—</span>
                                                 )}
                                             </div>
+                                        </td>
+                                    </>
+                                )}
+                                {hasCareer && (
+                                    <>
+                                        <td className="px-4 py-3.5">
+                                            {item.is_hiring === true ? (
+                                                item.hiring_confidence === "high" ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium px-2 py-0.5 border border-emerald-500/30">🟢 Actively Hiring</span>
+                                                ) : item.hiring_confidence === "medium" ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium px-2 py-0.5 border border-amber-500/30">🟡 Careers Page</span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/20 text-slate-400 text-xs font-medium px-2 py-0.5 border border-slate-500/30">⚪ Possible</span>
+                                                )
+                                            ) : (
+                                                <span className={tdMuted}>—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3.5">
+                                            {item.career_url ? (
+                                                <a
+                                                    href={item.career_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 transition-colors"
+                                                >
+                                                    Visit
+                                                </a>
+                                            ) : (
+                                                <span className={tdMuted}>—</span>
+                                            )}
+                                        </td>
+                                        <td className={`px-4 py-3.5 ${tdSec} text-xs max-w-[200px]`}>
+                                            {item.job_titles?.length > 0 ? (
+                                                <span className="line-clamp-2">{item.job_titles.join(", ")}</span>
+                                            ) : (
+                                                <span className={tdMuted}>—</span>
+                                            )}
                                         </td>
                                     </>
                                 )}

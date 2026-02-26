@@ -5,7 +5,7 @@ import * as XLSX from "xlsx";
 
 export const dynamic = "force-dynamic";
 
-const ALL_RESULTS_HEADERS = [
+const ALL_RESULTS_BASE_HEADERS = [
   "S.No",
   "Source Query",
   "Location",
@@ -21,25 +21,47 @@ const ALL_RESULTS_HEADERS = [
   "LinkedIn",
   "Google Maps",
 ];
+const CAREER_HEADERS = ["Hiring Status", "Career Page URL", "Job Titles", "Hiring Confidence"];
 
-function buildAllResultsRows(results) {
+function hiringStatusLabel(r) {
+  if (r.is_hiring != null && !r.is_hiring) return "Not Hiring";
+  if (r.hiring_confidence === "high") return "Actively Hiring";
+  if (r.hiring_confidence === "medium") return "Has Careers Page";
+  if (r.hiring_confidence === "low") return "Possible";
+  if (r.is_hiring != null || r.hiring_confidence) return "Not Hiring";
+  return "Not Scanned";
+}
+
+function buildAllResultsRows(results, includeCareer = false) {
   const list = Array.isArray(results) ? results : [];
-  return list.map((r, i) => [
-    i + 1,
-    r.source_query ?? "",
-    r.source_location ?? "",
-    r.name ?? "",
-    r.category ?? "",
-    r.rating ?? "",
-    r.review_count ?? r.reviews ?? "",
-    r.phone ?? "",
-    (r.enriched_emails ?? [])[0] ?? "",
-    (r.enriched_whatsapp ?? []).map((w) => `https://wa.me/${w}`).join(", "),
-    r.address ?? "",
-    r.website ?? "",
-    (r.enriched_linkedin ?? [])[0] ?? "",
-    r.maps_url ?? r.mapUrl ?? "",
-  ]);
+  const hasCareer = includeCareer && list.some((r) => r.is_hiring != null || r.hiring_confidence);
+  return list.map((r, i) => {
+    const row = [
+      i + 1,
+      r.source_query ?? "",
+      r.source_location ?? "",
+      r.name ?? "",
+      r.category ?? "",
+      r.rating ?? "",
+      r.review_count ?? r.reviews ?? "",
+      r.phone ?? "",
+      (r.enriched_emails ?? [])[0] ?? "",
+      (r.enriched_whatsapp ?? []).map((w) => `https://wa.me/${w}`).join(", "),
+      r.address ?? "",
+      r.website ?? "",
+      (r.enriched_linkedin ?? [])[0] ?? "",
+      r.maps_url ?? r.mapUrl ?? "",
+    ];
+    if (hasCareer) {
+      row.push(
+        hiringStatusLabel(r),
+        r.career_url ?? "",
+        (r.job_titles ?? []).join(", "),
+        (r.hiring_confidence ?? "").charAt(0).toUpperCase() + (r.hiring_confidence ?? "").slice(1) || ""
+      );
+    }
+    return row;
+  });
 }
 
 function buildByLocationRows(results) {
@@ -83,8 +105,8 @@ function buildByLocationRows(results) {
   return [["Location", "Results Found", "With Phone", "With Email", "With Website", "Avg Rating"], ...out];
 }
 
-function buildSummaryRows(stats, exportedAt) {
-  return [
+function buildSummaryRows(stats, exportedAt, hiringStats = null) {
+  const rows = [
     ["Field", "Value"],
     ["Total Searches", stats?.total_searches ?? 0],
     ["Total Results", stats?.total_results ?? 0],
@@ -93,6 +115,12 @@ function buildSummaryRows(stats, exportedAt) {
     ["Cached Searches", stats?.cached_count ?? 0],
     ["Exported On", exportedAt],
   ];
+  if (hiringStats) {
+    rows.push(["Businesses actively hiring", hiringStats.hiring]);
+    rows.push(["Businesses with job listings", hiringStats.with_job_titles]);
+    rows.push(["Career scan credits used", hiringStats.credits_used]);
+  }
+  return rows;
 }
 
 export async function POST(request) {
@@ -115,10 +143,11 @@ export async function POST(request) {
     }
 
     const wb = XLSX.utils.book_new();
-
-    const allResultsRows = buildAllResultsRows(results);
-    const wsAll = XLSX.utils.aoa_to_sheet([ALL_RESULTS_HEADERS, ...allResultsRows]);
-    wsAll["!cols"] = [
+    const hasCareer = results.some((r) => r.is_hiring != null || r.hiring_confidence);
+    const allResultsHeaders = hasCareer ? [...ALL_RESULTS_BASE_HEADERS, ...CAREER_HEADERS] : ALL_RESULTS_BASE_HEADERS;
+    const allResultsRows = buildAllResultsRows(results, true);
+    const wsAll = XLSX.utils.aoa_to_sheet([allResultsHeaders, ...allResultsRows]);
+    const allCols = [
       { wch: 6 },
       { wch: 28 },
       { wch: 28 },
@@ -134,7 +163,27 @@ export async function POST(request) {
       { wch: 45 },
       { wch: 50 },
     ];
+    if (hasCareer) allCols.push({ wch: 18 }, { wch: 40 }, { wch: 50 }, { wch: 14 });
+    wsAll["!cols"] = allCols;
     XLSX.utils.book_append_sheet(wb, wsAll, "All Results");
+
+    if (hasCareer) {
+      const hiringOnly = results.filter((r) => r.is_hiring === true);
+      const hiringColumns = ["Business Name", "Phone", "Email", "Website", "Career URL", "Job Titles", "Hiring Confidence", "Address"];
+      const hiringRows = hiringOnly.map((r) => [
+        r.name ?? "",
+        r.phone ?? "",
+        (r.enriched_emails ?? [])[0] ?? "",
+        r.website ?? "",
+        r.career_url ?? "",
+        (r.job_titles ?? []).join(", "),
+        (r.hiring_confidence ?? "").charAt(0).toUpperCase() + (r.hiring_confidence ?? "").slice(1) || "",
+        r.address ?? "",
+      ]);
+      const wsHiring = XLSX.utils.aoa_to_sheet([hiringColumns, ...hiringRows]);
+      wsHiring["!cols"] = hiringColumns.map((_, i) => ({ wch: i === 4 || i === 5 ? 45 : 22 }));
+      XLSX.utils.book_append_sheet(wb, wsHiring, "Hiring Only");
+    }
 
     const byLocationData = buildByLocationRows(results);
     const wsLocation = XLSX.utils.aoa_to_sheet(byLocationData);
@@ -151,8 +200,15 @@ export async function POST(request) {
       ...stats,
       emails_found: stats.emails_found ?? emailsFound,
     };
-    const wsSummary = XLSX.utils.aoa_to_sheet(buildSummaryRows(summaryStats, exportedAt));
-    wsSummary["!cols"] = [{ wch: 22 }, { wch: 28 }];
+    const hiringStats = hasCareer
+      ? {
+          hiring: results.filter((r) => r.is_hiring === true).length,
+          with_job_titles: results.filter((r) => r.job_titles?.length > 0).length,
+          credits_used: Math.ceil(results.filter((r) => r.hiring_confidence != null || r.is_hiring != null).length / 10),
+        }
+      : null;
+    const wsSummary = XLSX.utils.aoa_to_sheet(buildSummaryRows(summaryStats, exportedAt, hiringStats));
+    wsSummary["!cols"] = [{ wch: 32 }, { wch: 28 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
 
     const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });

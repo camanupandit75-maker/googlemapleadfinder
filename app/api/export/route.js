@@ -21,10 +21,21 @@ const BASE_COLUMNS = [
 ];
 
 const ENRICHED_COLUMNS = ["Email", "WhatsApp", "LinkedIn", "Facebook", "Extra Phones"];
+const CAREER_COLUMNS = ["Hiring Status", "Career Page URL", "Job Titles", "Hiring Confidence"];
 
-function buildRows(results, includeEnriched = false) {
+function hiringStatusLabel(r) {
+  if (r.is_hiring != null && !r.is_hiring) return "Not Hiring";
+  if (r.hiring_confidence === "high") return "Actively Hiring";
+  if (r.hiring_confidence === "medium") return "Has Careers Page";
+  if (r.hiring_confidence === "low") return "Possible";
+  if (r.is_hiring != null || r.hiring_confidence) return "Not Hiring";
+  return "Not Scanned";
+}
+
+function buildRows(results, includeEnriched = false, includeCareer = false) {
   const list = Array.isArray(results) ? results : [];
   const hasEnriched = includeEnriched && list.some((r) => r.enriched_emails?.length || r.enriched_whatsapp?.length);
+  const hasCareer = includeCareer && list.some((r) => r.is_hiring != null || r.hiring_confidence);
   return list.map((r, i) => {
     const base = [
       i + 1,
@@ -47,6 +58,14 @@ function buildRows(results, includeEnriched = false) {
         (r.enriched_linkedin ?? [])[0] ?? "",
         (r.enriched_facebook ?? [])[0] ?? "",
         (r.enriched_phones ?? []).join(", ")
+      );
+    }
+    if (hasCareer) {
+      base.push(
+        hiringStatusLabel(r),
+        r.career_url ?? "",
+        (r.job_titles ?? []).join(", "),
+        (r.hiring_confidence ?? "").charAt(0).toUpperCase() + (r.hiring_confidence ?? "").slice(1) || ""
       );
     }
     return base;
@@ -72,8 +91,13 @@ export async function POST(request) {
     }
 
     const hasEnriched = results.some((r) => r.enriched_emails?.length || r.enriched_whatsapp?.length);
-    const COLUMNS = hasEnriched ? [...BASE_COLUMNS, ...ENRICHED_COLUMNS] : BASE_COLUMNS;
-    const rows = buildRows(results, true);
+    const hasCareer = results.some((r) => r.is_hiring != null || r.hiring_confidence);
+    const COLUMNS = [
+      ...BASE_COLUMNS,
+      ...(hasEnriched ? ENRICHED_COLUMNS : []),
+      ...(hasCareer ? CAREER_COLUMNS : []),
+    ];
+    const rows = buildRows(results, true, true);
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([COLUMNS, ...rows]);
 
@@ -94,8 +118,53 @@ export async function POST(request) {
     if (hasEnriched) {
       colWidths.push({ wch: 32 }, { wch: 28 }, { wch: 45 }, { wch: 40 }, { wch: 25 });
     }
+    if (hasCareer) {
+      colWidths.push({ wch: 18 }, { wch: 40 }, { wch: 50 }, { wch: 14 });
+    }
     ws["!cols"] = colWidths;
-    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    XLSX.utils.book_append_sheet(wb, ws, "All Results");
+
+    if (hasCareer) {
+      const hiringOnly = results.filter((r) => r.is_hiring === true);
+      const hiringColumns = [
+        "Business Name",
+        "Phone",
+        "Email",
+        "Website",
+        "Career URL",
+        "Job Titles",
+        "Hiring Confidence",
+        "Address",
+      ];
+      const hiringRows = hiringOnly.map((r) => [
+        r.name ?? "",
+        r.phone ?? "",
+        (r.enriched_emails ?? [])[0] ?? "",
+        r.website ?? "",
+        r.career_url ?? "",
+        (r.job_titles ?? []).join(", "),
+        (r.hiring_confidence ?? "").charAt(0).toUpperCase() + (r.hiring_confidence ?? "").slice(1) || "",
+        r.address ?? "",
+      ]);
+      const wsHiring = XLSX.utils.aoa_to_sheet([hiringColumns, ...hiringRows]);
+      wsHiring["!cols"] = hiringColumns.map((_, i) => ({ wch: i === 4 || i === 5 ? 45 : 22 }));
+      XLSX.utils.book_append_sheet(wb, wsHiring, "Hiring Only");
+
+      const hiringCount = results.filter((r) => r.is_hiring === true).length;
+      const withJobTitles = results.filter((r) => r.job_titles?.length > 0).length;
+      const careerCreditsUsed = Math.ceil(
+        results.filter((r) => r.is_hiring != null || r.hiring_confidence).length / 10
+      );
+      const summaryRows = [
+        ["Metric", "Value"],
+        ["Businesses actively hiring", hiringCount],
+        ["Businesses with job listings", withJobTitles],
+        ["Career scan credits used", careerCreditsUsed],
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+      wsSummary["!cols"] = [{ wch: 32 }, { wch: 16 }];
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+    }
 
     if (format === "csv") {
       const supabase = createServerSupabase();
@@ -110,6 +179,7 @@ export async function POST(request) {
         .update({ total_results_exported: current + results.length })
         .eq("id", user.id);
       const csv = XLSX.utils.sheet_to_csv(ws);
+      // CSV is first sheet only (All Results)
       const filename = `leads_export_${Date.now()}.csv`;
       return new NextResponse(csv, {
         status: 200,
