@@ -102,6 +102,7 @@ export default function MarketMapPage() {
   const [careerScanning, setCareerScanning] = useState(false);
   const [careerScanStats, setCareerScanStats] = useState(null);
   const [careerScanDialog, setCareerScanDialog] = useState(false);
+  const [careerScanProgress, setCareerScanProgress] = useState({ current: 0, total: 0 });
 
   const fetchCredits = useCallback(async (token) => {
     if (!token) return;
@@ -288,10 +289,71 @@ export default function MarketMapPage() {
     }
   };
 
+  const handleExportHiringOnly = async () => {
+    const hiringOnly = allResults.filter((r) => r.is_hiring === true);
+    if (hiringOnly.length === 0) return;
+    try {
+      const res = await fetch("/api/bulk-export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          results: hiringOnly,
+          searches: localityResults.map((r) => ({ query: businessType, location: r.locality, result_count: r.count })),
+          stats: {
+            total_searches: localityResults.length,
+            total_results: hiringOnly.length,
+            credits_used: 0,
+            cached_count: 0,
+            emails_found: 0,
+          },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `market_map_hiring_${Date.now()}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      await fetchCredits(session?.access_token);
+    } catch (e) {
+      console.error(e);
+      alert("Export failed. Please try again.");
+    }
+  };
+
   const handleCareerScanClick = () => {
     const withWebsites = allResults.filter((r) => !!(r.website ?? "").trim());
     if (!withWebsites.length || careerScanning) return;
     setCareerScanDialog(true);
+  };
+
+  const mergeCareerChunkIntoMap = (currentResults, currentLocalityResults, chunkEnriched) => {
+    const mergedMap = new Map();
+    chunkEnriched.forEach((r) => {
+      const key = [r.source_query, r.source_location, r.name].filter(Boolean).join("|");
+      if (key) mergedMap.set(key, r);
+    });
+    const newAll = currentResults.map((r) => {
+      const key = [r.source_query, r.source_location, r.name].filter(Boolean).join("|");
+      return mergedMap.get(key) ?? r;
+    });
+    const newLocality = currentLocalityResults.map((loc) => ({
+      ...loc,
+      results: (loc.results ?? []).map((row) => {
+        const key = [row.source_query, row.source_location, row.name].filter(Boolean).join("|");
+        return mergedMap.get(key) ?? row;
+      }),
+    }));
+    return { newAll, newLocality };
   };
 
   const confirmCareerScan = async () => {
@@ -300,43 +362,49 @@ export default function MarketMapPage() {
     setCareerScanDialog(false);
     setCareerScanning(true);
     setCareerScanStats(null);
+    setCareerScanProgress({ current: 0, total: withWebsites.length });
     try {
-      const res = await fetch("/api/career-scan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ results: allResults }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        const merged = data.results ?? [];
-        const mergedMap = new Map();
-        merged.forEach((r) => {
-          const key = [r.source_query, r.source_location, r.name].filter(Boolean).join("|");
-          if (key) mergedMap.set(key, r);
+      const chunkSize = 10;
+      const total = withWebsites.length;
+      let mergedAll = allResults;
+      let mergedLocality = localityResults;
+      let aggStats = { hiring: 0, with_job_titles: 0, credits_used: 0 };
+      for (let i = 0; i < total; i += chunkSize) {
+        const chunk = withWebsites.slice(i, i + chunkSize);
+        const res = await fetch("/api/career-scan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ results: chunk }),
         });
-        setAllResults(merged);
-        setLocalityResults((prev) =>
-          prev.map((loc) => ({
-            ...loc,
-            results: (loc.results ?? []).map((row) => {
-              const key = [row.source_query, row.source_location, row.name].filter(Boolean).join("|");
-              return mergedMap.get(key) ?? row;
-            }),
-          }))
-        );
-        setCareerScanStats(data.stats ?? null);
-        await fetchCredits(session?.access_token);
-      } else {
-        alert(data.error || "Career scan failed");
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Career scan failed");
+          break;
+        }
+        const chunkResults = data.results ?? [];
+        const { newAll, newLocality } = mergeCareerChunkIntoMap(mergedAll, mergedLocality, chunkResults);
+        mergedAll = newAll;
+        mergedLocality = newLocality;
+        setAllResults(mergedAll);
+        setLocalityResults(mergedLocality);
+        setCareerScanProgress({ current: Math.min(i + chunkSize, total), total });
+        if (data.stats) {
+          aggStats.hiring += data.stats.hiring ?? 0;
+          aggStats.with_job_titles += data.stats.with_job_titles ?? 0;
+          aggStats.credits_used += data.stats.credits_used ?? 0;
+        }
       }
+      setCareerScanStats(aggStats);
+      await fetchCredits(session?.access_token);
     } catch (e) {
       console.error(e);
       alert("Career scan failed. Please try again.");
     } finally {
       setCareerScanning(false);
+      setCareerScanProgress({ current: 0, total: 0 });
     }
   };
 
@@ -357,6 +425,11 @@ export default function MarketMapPage() {
   const totalHiring = hiringByLocality.reduce((s, x) => s + x.hiring, 0);
   const localitiesWithHiring = hiringByLocality.filter((x) => x.hiring > 0).length;
   const topHiringArea = [...hiringByLocality].sort((a, b) => b.hiring - a.hiring)[0];
+  const confidenceOrder = { high: 0, medium: 1, low: 2 };
+  const hiringOnlyList = [...allResults]
+    .filter((r) => r.is_hiring === true)
+    .sort((a, b) => (confidenceOrder[a.hiring_confidence] ?? 99) - (confidenceOrder[b.hiring_confidence] ?? 99));
+  const getHiringColor = (count) => (count >= 5 ? "#22c55e" : count >= 1 ? "#eab308" : "#64748b");
 
   const mapCenter = city === "Custom" ? { lat: 28.6139, lng: 77.209, zoom: 10 } : (CITY_CENTERS[city] || { lat: 28.6139, lng: 77.209, zoom: 11 });
 
@@ -549,8 +622,10 @@ export default function MarketMapPage() {
                       <td className="px-4 py-3 text-slate-300">{r.withPhone}</td>
                       <td className="px-4 py-3 text-slate-300">{r.withWebsite}</td>
                       {careerScanStats && (
-                        <td className="px-4 py-3 text-cyan-400">
-                          {hiringByLocality.find((h) => h.locality === r.locality)?.hiring ?? 0}
+                        <td className="px-4 py-3">
+                          <span className="font-medium" style={{ color: getHiringColor(hiringByLocality.find((h) => h.locality === r.locality)?.hiring ?? 0) }}>
+                            {hiringByLocality.find((h) => h.locality === r.locality)?.hiring ?? 0}
+                          </span>
                         </td>
                       )}
                       <td className="px-4 py-3 text-slate-400 truncate max-w-[180px]">{r.topBusinesses?.[0] ?? "—"}</td>
@@ -570,7 +645,12 @@ export default function MarketMapPage() {
                 )}
                 {careerScanStats && topHiringArea?.hiring > 0 && (
                   <p className="text-slate-300">
-                    📋 Top Hiring Area: <span className="text-white font-medium">{topHiringArea.locality}</span> ({topHiringArea.hiring} businesses hiring)
+                    📋 Top Hiring Area: <span className="text-white font-medium">{topHiringArea.locality}</span> ({topHiringArea.hiring} hiring)
+                  </p>
+                )}
+                {careerScanStats && careerScanStats.with_job_titles > 0 && (
+                  <p className="text-slate-300">
+                    💼 With Job Listings: <span className="text-white font-medium">{careerScanStats.with_job_titles} businesses</span>
                   </p>
                 )}
                 {mostCompetitive && (
@@ -596,6 +676,73 @@ export default function MarketMapPage() {
               </div>
             </div>
 
+            {careerScanStats && hiringOnlyList.length > 0 && (
+              <div className="glass-card p-6 mb-8 overflow-x-auto">
+                <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Hiring Results</h2>
+                <p className="text-slate-400 text-sm mb-4">
+                  Businesses actively hiring ({hiringOnlyList.length} total), sorted by confidence.
+                </p>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">#</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Business Name</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Locality</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Phone</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Website</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Career Page</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Job Titles</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Confidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {hiringOnlyList.map((row, idx) => (
+                      <tr key={idx} className="border-b border-white/10">
+                        <td className="px-4 py-3 text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3 text-white font-medium">{row.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-slate-300">{row.source_location ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          {row.phone ? (
+                            <a href={`tel:${row.phone}`} className="text-[#22c55e] hover:underline">{row.phone}</a>
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.website ? (
+                            <a href={row.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Visit</a>
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.career_url ? (
+                            <a href={row.career_url} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Visit</a>
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-300 max-w-[200px] truncate" title={(row.job_titles ?? []).join(", ")}">
+                          {(row.job_titles ?? []).length > 0 ? (row.job_titles ?? []).join(", ") : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.hiring_confidence === "high" && (
+                            <span className="inline-flex rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium px-2 py-0.5 border border-emerald-500/30">High</span>
+                          )}
+                          {row.hiring_confidence === "medium" && (
+                            <span className="inline-flex rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium px-2 py-0.5 border border-amber-500/30">Medium</span>
+                          )}
+                          {(row.hiring_confidence === "low" || (!row.hiring_confidence && row.is_hiring)) && (
+                            <span className="inline-flex rounded-full bg-slate-500/20 text-slate-400 text-xs font-medium px-2 py-0.5 border border-slate-500/30">Low</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2 mb-6">
               <button
                 onClick={handleExportMapData}
@@ -609,15 +756,37 @@ export default function MarketMapPage() {
               >
                 Export All Leads to Excel
               </button>
-              <button
-                onClick={handleCareerScanClick}
-                disabled={careerScanning || !allResults.some((r) => !!(r.website ?? "").trim()) || !!careerScanStats}
-                className="border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
-                {careerScanStats ? "✅ Scan All for Hiring" : careerScanning ? "Scanning…" : "🏢 Scan All for Hiring"}
-              </button>
+              {careerScanStats && totalHiring > 0 && (
+                <button
+                  onClick={handleExportHiringOnly}
+                  className="border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  Export Hiring Only
+                </button>
+              )}
+              {careerScanning && careerScanProgress.total > 0 ? (
+                <div className="flex flex-col gap-1.5 min-w-[220px]">
+                  <span className="text-slate-300 text-sm font-medium">
+                    🏢 Scanning for hiring... {careerScanProgress.current}/{careerScanProgress.total} businesses ({Math.round((careerScanProgress.current / careerScanProgress.total) * 100)}%)
+                  </span>
+                  <div className="h-2 rounded overflow-hidden transition-all duration-300 ease-out" style={{ background: "rgba(255,255,255,0.1)", borderRadius: 4 }}>
+                    <div
+                      className="h-full rounded bg-[#22c55e] transition-all duration-300 ease-out"
+                      style={{ width: `${(careerScanProgress.current / careerScanProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleCareerScanClick}
+                  disabled={careerScanning || !allResults.some((r) => !!(r.website ?? "").trim()) || !!careerScanStats}
+                  className="border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  {careerScanStats ? "✅ Scan All for Hiring" : "🏢 Scan All for Hiring"}
+                </button>
+              )}
             </div>
-            {careerScanStats && (
+            {careerScanStats && !careerScanning && (
               <p className="text-cyan-400/90 text-sm mb-6">
                 🏢 Career Scan: {careerScanStats.hiring} actively hiring, {careerScanStats.with_job_titles} with job listings | {careerScanStats.credits_used} credit{careerScanStats.credits_used !== 1 ? "s" : ""} used
               </p>

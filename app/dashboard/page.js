@@ -69,6 +69,8 @@ export default function DashboardPage() {
     const [careerScanning, setCareerScanning] = useState(false);
     const [careerScanStats, setCareerScanStats] = useState(null);
     const [careerScanDialog, setCareerScanDialog] = useState(false);
+    const [careerScanProgress, setCareerScanProgress] = useState({ current: 0, total: 0 });
+    const [enrichProgress, setEnrichProgress] = useState({ current: 0, total: 0 });
     const [searchError, setSearchError] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
@@ -197,32 +199,61 @@ export default function DashboardPage() {
         }
     };
 
+    const mergeChunkIntoResults = (current, chunk) => {
+        const next = [...current];
+        for (const item of chunk) {
+            const idx = next.findIndex((r) => (r.place_id && r.place_id === item.place_id) || (r.name && r.name === item.name));
+            if (idx >= 0) next[idx] = item;
+        }
+        return next;
+    };
+
     const handleEnrich = async () => {
         if (!results.length || enriching) return;
+        const withWebsites = results.filter((r) => !!(r.website ?? r.websiteUri ?? "").trim());
+        const total = withWebsites.length;
+        if (total === 0) return;
         setEnriching(true);
         setEnrichmentStats(null);
+        setEnrichProgress({ current: 0, total });
         try {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
-            const res = await fetch("/api/enrich", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${currentSession?.access_token}`,
-                },
-                body: JSON.stringify({ results }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setResults(data.enriched ?? results);
-                setEnrichmentStats(data.stats ?? null);
-            } else {
-                alert(data.error || "Enrichment failed");
+            const chunkSize = 20;
+            let merged = results;
+            let aggStats = { emails_found: 0, phones_found: 0, whatsapp_found: 0, with_websites: 0, enriched: 0 };
+            for (let i = 0; i < total; i += chunkSize) {
+                const chunk = withWebsites.slice(i, i + chunkSize);
+                const res = await fetch("/api/enrich", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${currentSession?.access_token}`,
+                    },
+                    body: JSON.stringify({ results: chunk }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || "Enrichment failed");
+                    break;
+                }
+                merged = mergeChunkIntoResults(merged, data.enriched ?? []);
+                setResults(merged);
+                setEnrichProgress({ current: Math.min(i + chunkSize, total), total });
+                if (data.stats) {
+                    aggStats.emails_found += data.stats.emails_found ?? 0;
+                    aggStats.phones_found += data.stats.phones_found ?? 0;
+                    aggStats.whatsapp_found += data.stats.whatsapp_found ?? 0;
+                    aggStats.with_websites += data.stats.with_websites ?? 0;
+                    aggStats.enriched += data.stats.enriched ?? 0;
+                }
             }
+            setEnrichmentStats(aggStats);
         } catch (err) {
             console.error("Enrichment failed:", err);
             alert("Enrichment failed. Please try again.");
         } finally {
             setEnriching(false);
+            setEnrichProgress({ current: 0, total: 0 });
         }
     };
 
@@ -238,29 +269,45 @@ export default function DashboardPage() {
         setCareerScanDialog(false);
         setCareerScanning(true);
         setCareerScanStats(null);
+        setCareerScanProgress({ current: 0, total: withWebsites.length });
         try {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
-            const res = await fetch("/api/career-scan", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${currentSession?.access_token}`,
-                },
-                body: JSON.stringify({ results }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setResults(data.results ?? results);
-                setCareerScanStats(data.stats ?? null);
-                await fetchCredits(currentSession?.access_token);
-            } else {
-                alert(data.error || "Career scan failed");
+            const chunkSize = 10;
+            const total = withWebsites.length;
+            let merged = results;
+            let aggStats = { hiring: 0, with_job_titles: 0, credits_used: 0 };
+            for (let i = 0; i < total; i += chunkSize) {
+                const chunk = withWebsites.slice(i, i + chunkSize);
+                const res = await fetch("/api/career-scan", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${currentSession?.access_token}`,
+                    },
+                    body: JSON.stringify({ results: chunk }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || "Career scan failed");
+                    break;
+                }
+                merged = mergeChunkIntoResults(merged, data.results ?? []);
+                setResults(merged);
+                setCareerScanProgress({ current: Math.min(i + chunkSize, total), total });
+                if (data.stats) {
+                    aggStats.hiring += data.stats.hiring ?? 0;
+                    aggStats.with_job_titles += data.stats.with_job_titles ?? 0;
+                    aggStats.credits_used += data.stats.credits_used ?? 0;
+                }
             }
+            setCareerScanStats(aggStats);
+            await fetchCredits(currentSession?.access_token);
         } catch (err) {
             console.error("Career scan failed:", err);
             alert("Career scan failed. Please try again.");
         } finally {
             setCareerScanning(false);
+            setCareerScanProgress({ current: 0, total: 0 });
         }
     };
 
@@ -496,39 +543,55 @@ export default function DashboardPage() {
                                         ✅ Enriched — {enrichmentStats.emails_found} emails, {enrichmentStats.phones_found} phones{enrichmentStats.whatsapp_found ? `, ${enrichmentStats.whatsapp_found} WhatsApp` : ""} from {enrichmentStats.with_websites} websites
                                     </span>
                                 )}
-                                {enriching && (
-                                    <span className="text-slate-400 text-xs flex items-center gap-1.5">
-                                        <span className="w-3.5 h-3.5 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
-                                        Enriching websites…
-                                    </span>
-                                )}
-                                {careerScanning && (
-                                    <span className="text-slate-400 text-xs flex items-center gap-1.5">
-                                        <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                                        🏢 Scanning websites for career pages…
-                                    </span>
-                                )}
                                 {careerScanStats && (
                                     <span className="bg-cyan-500/10 text-cyan-400 text-xs font-medium px-2.5 py-1 rounded-full border border-cyan-500/20">
                                         🏢 Career Scan: {careerScanStats.hiring} actively hiring, {careerScanStats.with_job_titles} with job listings | {careerScanStats.credits_used} credit{careerScanStats.credits_used !== 1 ? "s" : ""} used
                                     </span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handleEnrich}
-                                    disabled={enriching || !results.length || !!enrichmentStats}
-                                    className={`bg-[#6B2D3C] border-2 border-[#5a2530] text-white hover:bg-[#7d3542] hover:border-[#8a3d4a] disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${!enriching && !enrichmentStats && results.length ? "animate-pulse" : ""}`}
-                                >
-                                    {enrichmentStats ? "✅ Enriched" : enriching ? "Enriching…" : "🔍 Enrich Emails"}
-                                </button>
-                                <button
-                                    onClick={handleCareerScan}
-                                    disabled={careerScanning || !results.length || !!careerScanStats || !results.some((r) => !!(r.website ?? "").trim())}
-                                    className="border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
-                                >
-                                    {careerScanStats ? "✅ Scan Hiring" : careerScanning ? "Scanning…" : "🏢 Scan Hiring"}
-                                </button>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {enriching && enrichProgress.total > 0 ? (
+                                    <div className="flex flex-col gap-1.5 min-w-[200px]">
+                                        <span className="text-slate-300 text-xs font-medium">
+                                            🔍 Enriching emails... {enrichProgress.current}/{enrichProgress.total} businesses ({Math.round((enrichProgress.current / enrichProgress.total) * 100)}%)
+                                        </span>
+                                        <div className="h-2 rounded overflow-hidden transition-all duration-300 ease-out" style={{ background: "rgba(255,255,255,0.1)", borderRadius: 4 }}>
+                                            <div
+                                                className="h-full rounded bg-[#22c55e] transition-all duration-300 ease-out"
+                                                style={{ width: `${(enrichProgress.current / enrichProgress.total) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={handleEnrich}
+                                        disabled={enriching || !results.length || !!enrichmentStats}
+                                        className={`bg-[#6B2D3C] border-2 border-[#5a2530] text-white hover:bg-[#7d3542] hover:border-[#8a3d4a] disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${!enriching && !enrichmentStats && results.length ? "animate-pulse" : ""}`}
+                                    >
+                                        {enrichmentStats ? "✅ Enriched" : "🔍 Enrich Emails"}
+                                    </button>
+                                )}
+                                {careerScanning && careerScanProgress.total > 0 ? (
+                                    <div className="flex flex-col gap-1.5 min-w-[200px]">
+                                        <span className="text-slate-300 text-xs font-medium">
+                                            🏢 Scanning for hiring... {careerScanProgress.current}/{careerScanProgress.total} businesses ({Math.round((careerScanProgress.current / careerScanProgress.total) * 100)}%)
+                                        </span>
+                                        <div className="h-2 rounded overflow-hidden transition-all duration-300 ease-out" style={{ background: "rgba(255,255,255,0.1)", borderRadius: 4 }}>
+                                            <div
+                                                className="h-full rounded bg-[#22c55e] transition-all duration-300 ease-out"
+                                                style={{ width: `${(careerScanProgress.current / careerScanProgress.total) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={handleCareerScan}
+                                        disabled={careerScanning || !results.length || !!careerScanStats || !results.some((r) => !!(r.website ?? "").trim())}
+                                        className="border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                                    >
+                                        {careerScanStats ? "✅ Scan Hiring" : "🏢 Scan Hiring"}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => handleExport("excel")}
                                     disabled={filteredResults.length === 0}
