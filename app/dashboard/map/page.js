@@ -462,6 +462,9 @@ export default function MarketMapPage() {
               <Link href="/dashboard/map" className="bg-white/10 text-white text-sm font-medium px-3 py-1.5 rounded-lg">
                 Market Map
               </Link>
+              <Link href="/dashboard/profile" className="text-slate-400 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                Profile
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">

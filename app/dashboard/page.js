@@ -74,6 +74,20 @@ export default function DashboardPage() {
     const [searchError, setSearchError] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [profileForm, setProfileForm] = useState({
+        org_name: "",
+        designation: "",
+        phone: "",
+        city: "",
+        pan_number: "",
+        gst_number: "",
+        nationality: "Indian",
+        company_domicile: "India",
+        purpose: "",
+    });
+    const [profileSaveError, setProfileSaveError] = useState(null);
+    const [profileSaving, setProfileSaving] = useState(false);
 
     const filteredResults = useMemo(() => {
         let list = results;
@@ -139,6 +153,30 @@ export default function DashboardPage() {
             }
             setSession(session);
             await fetchCredits(session.access_token);
+            try {
+                const profileRes = await fetch("/api/profile", {
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                });
+                if (profileRes.ok) {
+                    const profile = await profileRes.json();
+                    if (profile.profile_prompted === false || profile.profile_prompted == null) {
+                        setShowProfileModal(true);
+                        setProfileForm({
+                            org_name: profile.org_name ?? "",
+                            designation: profile.designation ?? "",
+                            phone: profile.phone ?? "",
+                            city: profile.city ?? "",
+                            pan_number: profile.pan_number ?? "",
+                            gst_number: profile.gst_number ?? "",
+                            nationality: profile.nationality ?? "Indian",
+                            company_domicile: profile.company_domicile ?? "India",
+                            purpose: profile.purpose ?? "",
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch profile", e);
+            }
             setAuthLoading(false);
         };
         checkAuth();
@@ -421,6 +459,83 @@ export default function DashboardPage() {
         }
     };
 
+    // ── Profile modal ────────────────────────────────────────────────────────
+    const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+    const handleProfileSkip = async () => {
+        setProfileSaveError(null);
+        setProfileSaving(true);
+        try {
+            const { data: { session: s } } = await supabase.auth.getSession();
+            const res = await fetch("/api/profile", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${s?.access_token}`,
+                },
+                body: JSON.stringify({ profile_prompted: true }),
+            });
+            if (res.ok) {
+                setShowProfileModal(false);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                setProfileSaveError(err.error || "Failed to update");
+            }
+        } catch (e) {
+            setProfileSaveError("Failed to update. Please try again.");
+        } finally {
+            setProfileSaving(false);
+        }
+    };
+
+    const handleProfileSave = async () => {
+        const pan = (profileForm.pan_number ?? "").trim().toUpperCase();
+        const gst = (profileForm.gst_number ?? "").trim().toUpperCase();
+        if (pan && !PAN_REGEX.test(pan)) {
+            setProfileSaveError("Invalid PAN format (e.g. ABCDE1234F)");
+            return;
+        }
+        if (gst && !GST_REGEX.test(gst)) {
+            setProfileSaveError("Invalid GST format (e.g. 27ABCDE1234F1Z5)");
+            return;
+        }
+        setProfileSaveError(null);
+        setProfileSaving(true);
+        try {
+            const { data: { session: s } } = await supabase.auth.getSession();
+            const res = await fetch("/api/profile", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${s?.access_token}`,
+                },
+                body: JSON.stringify({
+                    org_name: profileForm.org_name || null,
+                    designation: profileForm.designation || null,
+                    phone: profileForm.phone || null,
+                    city: profileForm.city || null,
+                    pan_number: pan || null,
+                    gst_number: gst || null,
+                    nationality: profileForm.nationality || null,
+                    company_domicile: profileForm.company_domicile || null,
+                    purpose: profileForm.purpose || null,
+                    profile_prompted: true,
+                }),
+            });
+            if (res.ok) {
+                setShowProfileModal(false);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                setProfileSaveError(err.error || "Failed to save");
+            }
+        } catch (e) {
+            setProfileSaveError("Failed to save. Please try again.");
+        } finally {
+            setProfileSaving(false);
+        }
+    };
+
     // ── Logout ───────────────────────────────────────────────────────────────
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -457,6 +572,9 @@ export default function DashboardPage() {
                             </Link>
                             <Link href="/dashboard/map" className="text-slate-400 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
                                 Market Map
+                            </Link>
+                            <Link href="/dashboard/profile" className="text-slate-400 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                                Profile
                             </Link>
                         </nav>
                     </div>
@@ -800,6 +918,143 @@ export default function DashboardPage() {
                                 className="px-4 py-2 text-sm font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-colors"
                             >
                                 Scan Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Profile completion modal (first signup) ────────────────────── */}
+            {showProfileModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                    <div className="relative glass-card bg-[#020617]/95 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+                        <h2 className="font-display font-bold text-xl text-white mb-1">Complete your profile</h2>
+                        <p className="text-slate-400 text-sm mb-6">Optional — helps us serve you better</p>
+                        {profileSaveError && (
+                            <p className="text-red-400 text-sm mb-4">{profileSaveError}</p>
+                        )}
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Organization Name</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.org_name}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, org_name: e.target.value }))}
+                                    placeholder="e.g. Sharma & Associates"
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Designation</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.designation}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, designation: e.target.value }))}
+                                    placeholder="e.g. Partner, CA, Manager"
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Phone</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.phone}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
+                                    placeholder="e.g. +91 98765 43210"
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">City</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.city}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, city: e.target.value }))}
+                                    placeholder="e.g. Mumbai"
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">PAN Number</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.pan_number}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, pan_number: e.target.value.toUpperCase() }))}
+                                    placeholder="e.g. ABCDE1234F"
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">GST Number</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.gst_number}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, gst_number: e.target.value.toUpperCase() }))}
+                                    placeholder="e.g. 27ABCDE1234F1Z5"
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Nationality</label>
+                                <select
+                                    value={profileForm.nationality}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, nationality: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                >
+                                    <option value="Indian">Indian</option>
+                                    <option value="UAE">UAE</option>
+                                    <option value="Singapore">Singapore</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Company Domicile</label>
+                                <select
+                                    value={profileForm.company_domicile}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, company_domicile: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                >
+                                    <option value="India">India</option>
+                                    <option value="UAE">UAE</option>
+                                    <option value="Saudi Arabia">Saudi Arabia</option>
+                                    <option value="Singapore">Singapore</option>
+                                    <option value="Malaysia">Malaysia</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Purpose</label>
+                                <select
+                                    value={profileForm.purpose}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, purpose: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                >
+                                    <option value="">Select...</option>
+                                    <option value="Lead Generation">Lead Generation</option>
+                                    <option value="Market Research">Market Research</option>
+                                    <option value="Recruitment">Recruitment</option>
+                                    <option value="Competitor Analysis">Competitor Analysis</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={handleProfileSkip}
+                                disabled={profileSaving}
+                                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white border border-white/10 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                Skip for now
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleProfileSave}
+                                disabled={profileSaving}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-[#22c55e] hover:bg-brand-600 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {profileSaving ? "Saving…" : "Save Profile"}
                             </button>
                         </div>
                     </div>
