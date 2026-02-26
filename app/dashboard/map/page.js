@@ -364,7 +364,7 @@ export default function MarketMapPage() {
     setCareerScanStats(null);
     setCareerScanProgress({ current: 0, total: withWebsites.length });
     try {
-      const chunkSize = 10;
+      const chunkSize = 3;
       const total = withWebsites.length;
       let mergedAll = allResults;
       let mergedLocality = localityResults;
@@ -696,7 +696,10 @@ export default function MarketMapPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {hiringOnlyList.map((row, idx) => (
+                    {hiringOnlyList.map((row, idx) => {
+                      const jobTitles = row.job_titles ?? [];
+                      const jobTitlesStr = jobTitles.length > 0 ? jobTitles.join(", ") : "—";
+                      return (
                       <tr key={idx} className="border-b border-white/10">
                         <td className="px-4 py-3 text-slate-400">{idx + 1}</td>
                         <td className="px-4 py-3 text-white font-medium">{row.name ?? "—"}</td>
@@ -722,8 +725,8 @@ export default function MarketMapPage() {
                             <span className="text-slate-500">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-slate-300 max-w-[200px] truncate" title={(row.job_titles ?? []).join(", ")}">
-                          {(row.job_titles ?? []).length > 0 ? (row.job_titles ?? []).join(", ") : "—"}
+                        <td className="px-4 py-3 text-slate-300 max-w-[200px] truncate" title={jobTitlesStr}>
+                          {jobTitlesStr}
                         </td>
                         <td className="px-4 py-3">
                           {row.hiring_confidence === "high" && (
@@ -737,7 +740,8 @@ export default function MarketMapPage() {
                           )}
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>

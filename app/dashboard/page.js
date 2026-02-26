@@ -218,7 +218,7 @@ export default function DashboardPage() {
         setEnrichProgress({ current: 0, total });
         try {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
-            const chunkSize = 20;
+            const chunkSize = 10;
             let merged = results;
             let aggStats = { emails_found: 0, phones_found: 0, whatsapp_found: 0, with_websites: 0, enriched: 0 };
             for (let i = 0; i < total; i += chunkSize) {
@@ -272,7 +272,7 @@ export default function DashboardPage() {
         setCareerScanProgress({ current: 0, total: withWebsites.length });
         try {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
-            const chunkSize = 10;
+            const chunkSize = 3;
             const total = withWebsites.length;
             let merged = results;
             let aggStats = { hiring: 0, with_job_titles: 0, credits_used: 0 };
