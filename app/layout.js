@@ -17,9 +17,16 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: "LeadFinder — Find Business Leads from Google Maps",
+  title: "Geonayan — B2B Lead Generation Tool for India | Find Business Leads from Google Maps",
   description:
-    "Search any locality or PIN code to find business leads like chartered accountants, law firms, restaurants and more. Export to Excel with rich contact details.",
+    "Search any PIN code or city to find chartered accountants, law firms, restaurants and more. Get phone numbers, emails, ratings and export to Excel. 10 free searches on signup.",
+  keywords: "lead generation India, Google Maps leads, find CA firms, business data extraction, B2B leads India, geonayan",
+  openGraph: {
+    title: "Geonayan — Find Business Leads from Google Maps",
+    description: "Search any PIN code or city. Get phone, email, ratings. Export to Excel. 10 free searches.",
+    url: "https://geonayan.com",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }) {

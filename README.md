@@ -1,3 +1,9 @@
+# Geonayan
+
+B2B lead generation from Google Maps. Find business leads by locality or PIN code. [geonayan.com](https://geonayan.com)
+
+---
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started

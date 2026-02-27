@@ -4,10 +4,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const SECTIONS = [
-  { title: "Data Source", body: "LeadFinder retrieves publicly available business information from Google Maps via the official Google Places API. We do not scrape, hack, or access any private databases." },
+  { title: "Data Source", body: "Geonayan retrieves publicly available business information from Google Maps via the official Google Places API. We do not scrape, hack, or access any private databases." },
   { title: "Email Extraction", body: "Emails and contact information are extracted from publicly accessible business websites. We only read information that businesses have published on their own websites for public contact." },
   { title: "Accuracy", body: "While we strive for accuracy, business information changes frequently. We cannot guarantee that all phone numbers, emails, or addresses are current. Users should verify critical information independently." },
-  { title: "No Legal/Financial Advice", body: "LeadFinder is a data tool, not a legal or financial advisory service. We do not provide recommendations on contacting businesses or compliance with telemarketing/spam laws." },
+  { title: "No Legal/Financial Advice", body: "Geonayan is a data tool, not a legal or financial advisory service. We do not provide recommendations on contacting businesses or compliance with telemarketing/spam laws." },
   { title: "User Responsibility", body: "Users are responsible for complying with applicable laws including India's IT Act, TRAI DND regulations, GDPR (for EU contacts), and any local anti-spam laws when using extracted contact information for outreach." },
   { title: "Refund Policy", body: "Credits are non-refundable once purchased. Cached searches (repeat queries within 24 hours) do not consume credits." },
   { title: "Data Retention", body: "Search results are cached for 24 hours for performance. We do not sell or share user data with third parties." },

@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 
 const TESTIMONIALS = [
   {
-    quote: "We used to spend 2 days building a list of CAs in Mumbai for our audit panel. LeadFinder did it in 5 minutes with emails included.",
+    quote: "We used to spend 2 days building a list of CAs in Mumbai for our audit panel. Geonayan did it in 5 minutes with emails included.",
     name: "Rohit Mehta",
     designation: "Partner",
     company: "Tax Advisory Firm, Mumbai",
@@ -47,7 +47,7 @@ const TESTIMONIALS = [
     company: "Noida",
   },
   {
-    quote: "We serve clients in Dubai and India. LeadFinder works for both markets. The Dubai locality scan was spot on.",
+    quote: "We serve clients in Dubai and India. Geonayan works for both markets. The Dubai locality scan was spot on.",
     name: "Faisal Khan",
     designation: "CFO Services",
     company: "Dubai",
@@ -72,7 +72,7 @@ export default function TestimonialsPage() {
       <main className="max-w-5xl mx-auto px-6 py-16">
         <h1 className="font-display font-bold text-3xl text-white mb-4 text-center">Testimonials</h1>
         <p className="text-slate-400 text-center mb-12 max-w-xl mx-auto">
-          What professionals are saying about LeadFinder
+          What professionals are saying about Geonayan
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

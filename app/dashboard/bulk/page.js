@@ -374,7 +374,7 @@ export default function BulkSearchPage() {
         amount,
         currency: currency || "INR",
         order_id,
-        name: "LeadFinder",
+        name: "Geonayan",
         description: `${pkg.credits} Search Credits — Bulk Search`,
         handler: async function (response) {
           try {
@@ -443,9 +443,9 @@ export default function BulkSearchPage() {
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
-                <span className="text-white font-display font-bold text-sm">LF</span>
+                <span className="text-white font-display font-bold text-sm">GN</span>
               </div>
-              <span className="font-display font-bold text-lg text-white">LeadFinder</span>
+              <span className="font-display font-bold text-lg text-white">Geonayan</span>
             </Link>
             <nav className="flex items-center gap-1">
               <Link

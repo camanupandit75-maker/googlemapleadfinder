@@ -16,7 +16,7 @@ const FAQS = [
     { q: "What counts as 1 credit?", a: "1 credit = 1 search query. Each search returns up to 20 results with full contact details. If the same query was searched before and is cached, it costs 0 credits." },
     { q: "Do credits expire?", a: "No, credits never expire. Buy once and use them whenever you want — there's no time limit." },
     { q: "What data do I get?", a: "Every result includes: business name, category, phone number, full address, website URL, Google Maps link, star rating, and number of reviews." },
-    { q: "Which countries are supported?", a: "LeadFinder works globally — any locality that Google Maps covers. This includes India, UAE, USA, UK, Australia, and 200+ other countries." },
+    { q: "Which countries are supported?", a: "Geonayan works globally — any locality that Google Maps covers. This includes India, UAE, USA, UK, Australia, and 200+ other countries." },
     { q: "Can I get a refund?", a: "Since credits are delivered instantly and are digital in nature, we don't offer refunds. However, unused credits never expire so you can use them anytime." },
 ];
 

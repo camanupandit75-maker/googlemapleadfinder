@@ -138,9 +138,9 @@ export default function ProfilePage() {
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center">
-                <span className="text-white font-display font-bold text-sm">LF</span>
+                <span className="text-white font-display font-bold text-sm">GN</span>
               </div>
-              <span className="font-display font-bold text-lg text-white">LeadFinder</span>
+              <span className="font-display font-bold text-lg text-white">Geonayan</span>
             </Link>
             <nav className="flex items-center gap-1">
               <Link href="/dashboard" className="text-slate-400 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">

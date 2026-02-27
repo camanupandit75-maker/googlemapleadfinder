@@ -13,13 +13,13 @@ export default function Navbar({ variant = "dark" }) {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5">
                 <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-display font-bold text-sm">LF</span>
+                    <span className="text-white font-display font-bold text-sm">GN</span>
                 </div>
                 <span
                     className={`font-display font-bold text-lg ${isDark ? "text-white" : "text-slate-900"
                         }`}
                 >
-                    LeadFinder
+                    Geonayan
                 </span>
             </Link>
 

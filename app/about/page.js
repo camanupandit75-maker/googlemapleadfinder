@@ -27,7 +27,7 @@ export default function AboutPage() {
         <section className="mb-14 animate-fade-in-up">
           <h2 className="font-display font-semibold text-lg text-white mb-3">Our Story</h2>
           <p className="text-slate-400 leading-relaxed">
-            LeadFinder was built by a Chartered Accountant who was tired of manually searching Google Maps for business contacts. What started as an internal tool for finding CA firms across India became a full-fledged business intelligence platform.
+            Geonayan was built by a Chartered Accountant who was tired of manually searching Google Maps for business contacts. What started as an internal tool for finding CA firms across India became a full-fledged business intelligence platform.
           </p>
         </section>
 

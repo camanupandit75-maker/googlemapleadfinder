@@ -1,4 +1,4 @@
--- LeadFinder Supabase Schema
+-- Geonayan Supabase Schema
 -- Run this in Supabase SQL Editor
 
 -- ── Extensions ─────────────────────────────────────────────────────────────

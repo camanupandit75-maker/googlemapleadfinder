@@ -54,9 +54,9 @@ export default function LoginPage() {
                 <div className="text-center mb-8">
                     <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
                         <div className="w-9 h-9 bg-brand-500 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-display font-bold text-sm">LF</span>
-                        </div>
-                        <span className="font-display font-bold text-xl text-white">LeadFinder</span>
+<span className="text-white font-display font-bold text-sm">GN</span>
+                            </div>
+                        <span className="font-display font-bold text-xl text-white">Geonayan</span>
                     </Link>
                     <h1 className="font-display font-bold text-2xl text-white">Welcome back</h1>
                 </div>
