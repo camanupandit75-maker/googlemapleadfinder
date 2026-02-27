@@ -4,6 +4,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+
 const STATS = [
   { value: "35,000+", label: "searches powered monthly" },
   { value: "6 Cities", label: "with pre-built market maps" },

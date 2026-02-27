@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -62,6 +63,33 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <Navbar variant="dark" />
+      <Script
+        id="geonayan-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "Geonayan",
+            url: "https://geonayan.com",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web",
+            description:
+              "B2B lead generation tool for India. Search any PIN code or city to find business leads from Google Maps with phone numbers, emails, ratings. Export to Excel.",
+            offers: {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "INR",
+              description: "10 free searches on signup",
+            },
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: "4.8",
+              reviewCount: "8",
+            },
+          }),
+        }}
+      />
 
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center animate-fade-in-up">
@@ -108,6 +136,9 @@ export default function LandingPage() {
 
       {/* Features Grid */}
       <section className="max-w-5xl mx-auto px-6 pb-16">
+        <h2 className="font-display font-bold text-3xl text-center mb-8 animate-fade-in">
+          Features
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f, i) => (
             <div
@@ -127,6 +158,9 @@ export default function LandingPage() {
 
       {/* Pricing anchor */}
       <section className="max-w-2xl mx-auto px-6 pb-16 text-center">
+        <h2 className="font-display font-bold text-3xl text-center mb-4">
+          Pricing
+        </h2>
         <p className="text-slate-400 text-lg mb-4">
           Credits start at just ₹10 per search. No subscription. No commitment.
         </p>
@@ -162,7 +196,7 @@ export default function LandingPage() {
 
       {/* Testimonials (top 3) */}
       <section className="max-w-5xl mx-auto px-6 pb-24">
-        <h2 className="font-display font-bold text-3xl text-center mb-4">What professionals say</h2>
+        <h2 className="font-display font-bold text-3xl text-center mb-4">Testimonials</h2>
         <p className="text-slate-400 text-center mb-10 max-w-xl mx-auto">
           Trusted by CAs, sales teams, and recruiters across India and UAE.
         </p>
@@ -175,7 +209,7 @@ export default function LandingPage() {
             >
               <p className="text-slate-300 text-base leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>
               <Stars />
-              <p className="font-semibold text-white mt-3">{t.name}</p>
+              <h3 className="font-semibold text-white mt-3 text-base">{t.name}</h3>
               <p className="text-sm text-slate-500">{t.designation}, {t.company}</p>
             </div>
           ))}

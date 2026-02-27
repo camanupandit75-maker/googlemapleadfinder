@@ -32,6 +32,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${jakarta.variable} ${dmSans.variable}`}>
+      <head>
+        <link rel="canonical" href="https://geonayan.com" />
+      </head>
       <body className="font-body antialiased">
         {children}
         <Script

@@ -5,6 +5,7 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+
 const PACKAGES = [
     { id: "starter", name: "Starter", credits: 50, price: 499, features: ["50 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Email support", "Cached results at 0 cost"] },
     { id: "growth", name: "Growth", credits: 200, price: 1499, features: ["200 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Priority support", "Cached results at 0 cost", "Bulk export"] },
