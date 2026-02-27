@@ -1,6 +1,14 @@
+import { getAllCitySlugs } from "@/lib/city-leads-data";
+
 export default function sitemap() {
   const baseUrl = "https://geonayan.com";
   const lastModified = new Date();
+
+  const cityPages = getAllCitySlugs().map((slug) => ({
+    url: `${baseUrl}/leads/${slug}`,
+    lastModified,
+    priority: 0.7,
+  }));
 
   return [
     { url: baseUrl, lastModified, priority: 1.0 },
@@ -10,6 +18,7 @@ export default function sitemap() {
     { url: `${baseUrl}/disclaimer`, lastModified, priority: 0.3 },
     { url: `${baseUrl}/login`, lastModified, priority: 0.5 },
     { url: `${baseUrl}/signup`, lastModified, priority: 0.7 },
+    ...cityPages,
   ];
 }
 

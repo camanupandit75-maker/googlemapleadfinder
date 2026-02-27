@@ -23,6 +23,20 @@ export default function Footer() {
         </Link>
       </div>
       <p className="text-sm text-slate-500 mb-2">
+        Find Leads in:{" "}
+        <Link href="/leads/mumbai" className="text-slate-400 hover:text-[#22c55e] transition-colors">Mumbai</Link>
+        {" | "}
+        <Link href="/leads/delhi" className="text-slate-400 hover:text-[#22c55e] transition-colors">Delhi</Link>
+        {" | "}
+        <Link href="/leads/bangalore" className="text-slate-400 hover:text-[#22c55e] transition-colors">Bangalore</Link>
+        {" | "}
+        <Link href="/leads/gurgaon" className="text-slate-400 hover:text-[#22c55e] transition-colors">Gurgaon</Link>
+        {" | "}
+        <Link href="/leads/chennai" className="text-slate-400 hover:text-[#22c55e] transition-colors">Chennai</Link>
+        {" | "}
+        <Link href="/leads/hyderabad" className="text-slate-400 hover:text-[#22c55e] transition-colors">Hyderabad</Link>
+      </p>
+      <p className="text-sm text-slate-500 mb-2">
         🔒 Your data is secure. We never sell or share user information.
       </p>
       <p className="text-xs text-slate-600 mb-2">
