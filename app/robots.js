@@ -5,7 +5,7 @@ export default function robots() {
       allow: "/",
       disallow: ["/dashboard/", "/api/"],
     },
-    sitemap: "https://geonayan.com/sitemap.xml",
+    sitemap: "https://www.geonayan.com/sitemap.xml",
   };
 }
 

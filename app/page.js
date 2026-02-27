@@ -71,7 +71,7 @@ export default function LandingPage() {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
             name: "Geonayan",
-            url: "https://geonayan.com",
+            url: "https://www.geonayan.com",
             applicationCategory: "BusinessApplication",
             operatingSystem: "Web",
             description:

@@ -24,7 +24,7 @@ export const metadata = {
   openGraph: {
     title: "Geonayan — Find Business Leads from Google Maps",
     description: "Search any PIN code or city. Get phone, email, ratings. Export to Excel. 10 free searches.",
-    url: "https://geonayan.com",
+    url: "https://www.geonayan.com",
     type: "website",
   },
 };
@@ -33,7 +33,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${jakarta.variable} ${dmSans.variable}`}>
       <head>
-        <link rel="canonical" href="https://geonayan.com" />
+        <link rel="canonical" href="https://www.geonayan.com" />
       </head>
       <body className="font-body antialiased">
         {children}

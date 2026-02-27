@@ -1,7 +1,7 @@
 import { getAllCitySlugs } from "@/lib/city-leads-data";
 
 export default function sitemap() {
-  const baseUrl = "https://geonayan.com";
+  const baseUrl = "https://www.geonayan.com";
   const lastModified = new Date();
 
   const cityPages = getAllCitySlugs().map((slug) => ({
