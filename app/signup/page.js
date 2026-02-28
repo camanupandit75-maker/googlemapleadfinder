@@ -4,8 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabase } from "@/lib/supabase";
 
+const NATIONALITY_OPTIONS = ["Indian", "UAE", "Singapore", "Malaysia", "Saudi Arabia", "Other"];
+const DOMICILE_OPTIONS = ["India", "UAE", "Saudi Arabia", "Singapore", "Malaysia", "UK", "USA", "Other"];
+
 export default function SignupPage() {
     const [fullName, setFullName] = useState("");
+    const [isBusiness, setIsBusiness] = useState(false);
+    const [nationality, setNationality] = useState("Indian");
+    const [companyDomicile, setCompanyDomicile] = useState("India");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -26,14 +32,37 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            const { error } = await supabase.auth.signUp({
+            const accountType = isBusiness ? "business" : "individual";
+            const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
-                    data: { full_name: fullName },
+                    data: {
+                        full_name: fullName.trim() || null,
+                        account_type: accountType,
+                        nationality: !isBusiness ? nationality : null,
+                        company_domicile: isBusiness ? companyDomicile : null,
+                    },
                 },
             });
-            if (error) throw error;
+            if (signUpError) throw signUpError;
+            if (data?.session) {
+                try {
+                    await fetch("/api/profile", {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${data.session.access_token}`,
+                        },
+                        body: JSON.stringify({
+                            full_name: fullName.trim() || null,
+                            account_type: accountType,
+                            nationality: !isBusiness ? nationality : null,
+                            company_domicile: isBusiness ? companyDomicile : null,
+                        }),
+                    });
+                } catch (_) {}
+            }
             setSuccess(true);
         } catch (err) {
             setError(err.message || "Signup failed. Please try again.");
@@ -89,15 +118,54 @@ export default function SignupPage() {
                 <div className="bg-white rounded-2xl shadow-xl p-7">
                     <form onSubmit={handleSignup} className="space-y-4">
                         <div>
+                            <label className="block text-xs text-slate-500 mb-1">
+                                {isBusiness ? "Business / Organization Name" : "Full Name"}
+                            </label>
                             <input
                                 type="text"
                                 value={fullName}
                                 onChange={(e) => setFullName(e.target.value)}
-                                placeholder="Full Name"
-                                required
+                                placeholder="Your name or business name"
                                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                             />
                         </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={isBusiness}
+                                onChange={(e) => setIsBusiness(e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+                            />
+                            <span className="text-sm text-slate-700">I&apos;m registering as a business</span>
+                        </label>
+                        {!isBusiness && (
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Nationality</label>
+                                <select
+                                    value={nationality}
+                                    onChange={(e) => setNationality(e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                >
+                                    {NATIONALITY_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        {isBusiness && (
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Country of Domicile</label>
+                                <select
+                                    value={companyDomicile}
+                                    onChange={(e) => setCompanyDomicile(e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                >
+                                    {DOMICILE_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <div>
                             <input
                                 type="email"

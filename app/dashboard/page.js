@@ -76,6 +76,8 @@ export default function DashboardPage() {
     const [showModal, setShowModal] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [profileForm, setProfileForm] = useState({
+        full_name: "",
+        account_type: "individual",
         org_name: "",
         designation: "",
         phone: "",
@@ -162,6 +164,8 @@ export default function DashboardPage() {
                     if (profile.profile_prompted === false || profile.profile_prompted == null) {
                         setShowProfileModal(true);
                         setProfileForm({
+                            full_name: profile.full_name ?? "",
+                            account_type: profile.account_type === "business" ? "business" : "individual",
                             org_name: profile.org_name ?? "",
                             designation: profile.designation ?? "",
                             phone: profile.phone ?? "",
@@ -511,6 +515,8 @@ export default function DashboardPage() {
                     Authorization: `Bearer ${s?.access_token}`,
                 },
                 body: JSON.stringify({
+                    full_name: profileForm.full_name || null,
+                    account_type: profileForm.account_type || null,
                     org_name: profileForm.org_name || null,
                     designation: profileForm.designation || null,
                     phone: profileForm.phone || null,
@@ -936,6 +942,63 @@ export default function DashboardPage() {
                         )}
                         <div className="space-y-4 mb-6">
                             <div>
+                                <label className="block text-xs text-slate-500 mb-1">
+                                    {profileForm.account_type === "business" ? "Business / Organization Name" : "Full Name"}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profileForm.full_name}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, full_name: e.target.value }))}
+                                    placeholder={profileForm.account_type === "business" ? "Your business name" : "Your name"}
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                />
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={profileForm.account_type === "business"}
+                                    onChange={(e) => setProfileForm((f) => ({ ...f, account_type: e.target.checked ? "business" : "individual" }))}
+                                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#22c55e] focus:ring-[#22c55e]"
+                                />
+                                <span className="text-sm text-slate-300">I&apos;m registering as a business</span>
+                            </label>
+                            {profileForm.account_type === "individual" && (
+                                <div>
+                                    <label className="block text-xs text-slate-500 mb-1">Nationality</label>
+                                    <select
+                                        value={profileForm.nationality}
+                                        onChange={(e) => setProfileForm((f) => ({ ...f, nationality: e.target.value }))}
+                                        className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                    >
+                                        <option value="Indian">Indian</option>
+                                        <option value="UAE">UAE</option>
+                                        <option value="Singapore">Singapore</option>
+                                        <option value="Malaysia">Malaysia</option>
+                                        <option value="Saudi Arabia">Saudi Arabia</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            )}
+                            {profileForm.account_type === "business" && (
+                                <div>
+                                    <label className="block text-xs text-slate-500 mb-1">Country of Domicile</label>
+                                    <select
+                                        value={profileForm.company_domicile}
+                                        onChange={(e) => setProfileForm((f) => ({ ...f, company_domicile: e.target.value }))}
+                                        className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                                    >
+                                        <option value="India">India</option>
+                                        <option value="UAE">UAE</option>
+                                        <option value="Saudi Arabia">Saudi Arabia</option>
+                                        <option value="Singapore">Singapore</option>
+                                        <option value="Malaysia">Malaysia</option>
+                                        <option value="UK">UK</option>
+                                        <option value="USA">USA</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            )}
+                            <div>
                                 <label className="block text-xs text-slate-500 mb-1">Organization Name</label>
                                 <input
                                     type="text"
@@ -994,34 +1057,6 @@ export default function DashboardPage() {
                                     placeholder="e.g. 27ABCDE1234F1Z5"
                                     className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                                 />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-slate-500 mb-1">Nationality</label>
-                                <select
-                                    value={profileForm.nationality}
-                                    onChange={(e) => setProfileForm((f) => ({ ...f, nationality: e.target.value }))}
-                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
-                                >
-                                    <option value="Indian">Indian</option>
-                                    <option value="UAE">UAE</option>
-                                    <option value="Singapore">Singapore</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs text-slate-500 mb-1">Company Domicile</label>
-                                <select
-                                    value={profileForm.company_domicile}
-                                    onChange={(e) => setProfileForm((f) => ({ ...f, company_domicile: e.target.value }))}
-                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
-                                >
-                                    <option value="India">India</option>
-                                    <option value="UAE">UAE</option>
-                                    <option value="Saudi Arabia">Saudi Arabia</option>
-                                    <option value="Singapore">Singapore</option>
-                                    <option value="Malaysia">Malaysia</option>
-                                    <option value="Other">Other</option>
-                                </select>
                             </div>
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Purpose</label>

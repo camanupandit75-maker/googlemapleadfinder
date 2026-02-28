@@ -17,7 +17,7 @@ export async function GET(request) {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, credits, org_name, pan_number, gst_number, nationality, company_domicile, phone, designation, city, purpose, profile_prompted")
+      .select("id, email, credits, full_name, account_type, org_name, pan_number, gst_number, nationality, company_domicile, phone, designation, city, purpose, profile_prompted")
       .eq("id", user.id)
       .single();
 
@@ -49,6 +49,8 @@ export async function PUT(request) {
 
     const updates = {};
     const allowed = [
+      "full_name",
+      "account_type",
       "org_name",
       "pan_number",
       "gst_number",
