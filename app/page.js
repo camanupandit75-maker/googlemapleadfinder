@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -63,8 +60,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <Navbar variant="dark" />
-      <Script
-        id="geonayan-schema"
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
@@ -90,16 +86,68 @@ export default function LandingPage() {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "What is Geonayan?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Geonayan is a B2B lead generation tool that helps you find business leads from Google Maps. Search any PIN code or city to get phone numbers, emails, ratings and export to Excel.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Is Geonayan free to use?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Yes, you get 10 free searches when you sign up. No credit card required. After that, credits start at just ₹499.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "What data can I extract?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Business name, phone number, address, ratings, reviews, website, email, WhatsApp, LinkedIn, hiring status, and AI lead scoring.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Which cities does Geonayan cover?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Geonayan works globally using Google Maps data. Popular cities include Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Gurgaon, Dubai, and any city worldwide.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "How is Geonayan different from JustDial?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "JustDial is passive — you pay to be listed. Geonayan is active — you search, find leads with emails and phone numbers, score them, and export to Excel. Starting at ₹499 vs ₹24,000/year.",
+                },
+              },
+            ],
+          }),
+        }}
+      />
 
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center animate-fade-in-up">
-        <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-tight mb-6 tracking-tight">
-          Get 10 Free Business Leads{" "}
-          <span className="text-brand-400">— No Credit Card Required</span>
+        <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-tight mb-4 tracking-tight">
+          Find Business Leads from Google Maps — Any City, Any PIN Code
         </h1>
-
+        <p className="text-lg text-brand-400 font-medium mb-4">
+          Get 10 free searches — no credit card required
+        </p>
         <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Search any locality or PIN code. Get phone numbers, emails, ratings — exported to Excel in seconds.
+          Search any locality or PIN code across India and MENA. Get phone numbers, emails, ratings — exported to Excel in seconds.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -128,8 +176,8 @@ export default function LandingPage() {
             <p className="text-sm text-slate-500">Results Exported</p>
           </div>
           <div>
-            <p className="text-2xl md:text-3xl font-display font-bold text-white">6</p>
-            <p className="text-sm text-slate-500">Cities Mapped</p>
+            <p className="text-2xl md:text-3xl font-display font-bold text-white">195+</p>
+            <p className="text-sm text-slate-500">Works in 195+ Countries</p>
           </div>
         </div>
       </section>
