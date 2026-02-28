@@ -23,6 +23,13 @@ function mapResultForTable(r) {
     };
 }
 
+const DEFAULT_PACKAGES = [
+    { id: "starter", name: "Starter", credits: 50, price: 499, price_inr: 49900 },
+    { id: "growth", name: "Growth", credits: 200, price: 1499, price_inr: 149900 },
+    { id: "pro", name: "Pro", credits: 500, price: 2999, price_inr: 299900 },
+    { id: "enterprise", name: "Enterprise", credits: 2000, price: 9999, price_inr: 999900 },
+];
+
 function packageForCard(pkg) {
     const price = pkg.price_inr != null ? pkg.price_inr / 100 : (pkg.price ?? 0);
     return {
@@ -74,6 +81,7 @@ export default function DashboardPage() {
     const [searchError, setSearchError] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
+    const [paymentToast, setPaymentToast] = useState(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [profileForm, setProfileForm] = useState({
         full_name: "",
@@ -391,13 +399,14 @@ export default function DashboardPage() {
     // ── Razorpay Buy Handler ─────────────────────────────────────────────────
     const handleBuy = async (pkg) => {
         if (typeof window === "undefined" || !window.Razorpay) {
-            alert("Razorpay SDK not loaded. Please refresh and try again.");
+            setPaymentToast({ type: "error", message: "Razorpay SDK not loaded. Please refresh and try again." });
             return;
         }
         if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
-            alert("Razorpay is not configured.");
+            setPaymentToast({ type: "error", message: "Razorpay is not configured." });
             return;
         }
+        const amountRupees = pkg.price != null ? pkg.price : (pkg.price_inr != null ? pkg.price_inr / 100 : 0);
         try {
             const orderRes = await fetch("/api/razorpay/create-order", {
                 method: "POST",
@@ -405,24 +414,28 @@ export default function DashboardPage() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${session?.access_token}`,
                 },
-                body: JSON.stringify({ package_id: pkg.id }),
+                body: JSON.stringify({
+                    amount: amountRupees,
+                    plan_name: pkg.name,
+                    credits: pkg.credits,
+                }),
             });
             if (!orderRes.ok) {
                 const err = await orderRes.json().catch(() => ({}));
-                alert(err.error || "Failed to create order");
+                setPaymentToast({ type: "error", message: err.error || "Failed to create order" });
                 return;
             }
-            const { order_id, amount, currency, package: pkgInfo } = await orderRes.json();
+            const { order_id, amount, currency } = await orderRes.json();
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount,
                 currency: currency || "INR",
                 order_id,
                 name: "Geonayan",
-                description: `${pkg.credits} Search Credits — ${pkg.name} Pack`,
+                description: `${pkg.credits} Credits — ${pkg.name}`,
                 handler: async function (response) {
                     try {
-                        const verifyRes = await fetch("/api/razorpay/verify", {
+                        const verifyRes = await fetch("/api/razorpay/verify-payment", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
@@ -432,26 +445,26 @@ export default function DashboardPage() {
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_signature: response.razorpay_signature,
-                                package_id: pkg.id,
                             }),
                         });
-                        if (!verifyRes.ok) {
-                            const err = await verifyRes.json().catch(() => ({}));
-                            alert(err.error || "Payment verification failed");
+                        const data = await verifyRes.json().catch(() => ({}));
+                        if (!verifyRes.ok || !data.success) {
+                            setPaymentToast({ type: "error", message: data.error || "Payment verification failed" });
                             return;
                         }
-                        const data = await verifyRes.json();
                         setCredits(data.new_balance ?? credits + pkg.credits);
                         setShowModal(false);
                         await fetchCredits(session?.access_token);
-                        alert(`Payment successful! ${data.credits_added} credits added.`);
+                        setPaymentToast({ type: "success", message: `🎉 ${data.credits_added} credits added!` });
+                        setTimeout(() => setPaymentToast(null), 4000);
                     } catch (e) {
                         console.error(e);
-                        alert("Verification failed. Please contact support if credits were charged.");
+                        setPaymentToast({ type: "error", message: "Verification failed. Please contact support if credits were charged." });
                     }
                 },
                 prefill: {
                     email: session?.user?.email || "",
+                    name: session?.user?.user_metadata?.full_name || "",
                 },
                 theme: { color: "#22c55e" },
             };
@@ -459,7 +472,7 @@ export default function DashboardPage() {
             rzp.open();
         } catch (e) {
             console.error(e);
-            alert("Failed to start payment. Please try again.");
+            setPaymentToast({ type: "error", message: "Failed to start payment. Please try again." });
         }
     };
 
@@ -559,6 +572,18 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-[#020617] text-white dashboard-dark">
+            {/* ── Payment toast ────────────────────────────────────────────────── */}
+            {paymentToast && (
+                <div
+                    className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-3 rounded-lg text-sm font-medium shadow-lg animate-fade-in ${
+                        paymentToast.type === "success"
+                            ? "bg-[#22c55e] text-white"
+                            : "bg-red-500/90 text-white"
+                    }`}
+                >
+                    {paymentToast.message}
+                </div>
+            )}
             {/* ── Header ────────────────────────────────────────────────────────── */}
             <header className="sticky top-0 z-40 bg-[#020617]/95 border-b border-white/10 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
@@ -877,7 +902,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="space-y-4 mb-6">
-                            {(packages.length ? packages.map(packageForCard) : []).map((pkg) => (
+                            {(packages.length ? packages.map(packageForCard) : DEFAULT_PACKAGES.map(packageForCard)).map((pkg) => (
                                 <PackageCard
                                     key={pkg.id}
                                     pkg={pkg}

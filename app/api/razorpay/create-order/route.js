@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
-import { createServerSupabase } from "@/lib/supabase";
 import Razorpay from "razorpay";
 
 export const dynamic = "force-dynamic";
@@ -13,24 +12,19 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const packageId = body.package_id;
-    if (!packageId) {
+    const { amount, plan_name, credits } = body;
+
+    if (amount == null || !plan_name || credits == null) {
       return NextResponse.json(
-        { error: "package_id is required" },
+        { error: "amount, plan_name, and credits are required" },
         { status: 400 }
       );
     }
 
-    const supabase = createServerSupabase();
-    const { data: pkg, error: pkgError } = await supabase
-      .from("credit_packages")
-      .select("id, name, credits, price_inr, is_active")
-      .eq("id", packageId)
-      .single();
-
-    if (pkgError || !pkg || !pkg.is_active) {
+    const amountPaise = Math.round(Number(amount) * 100);
+    if (!Number.isFinite(amountPaise) || amountPaise < 100) {
       return NextResponse.json(
-        { error: "Invalid or inactive package" },
+        { error: "Invalid amount" },
         { status: 400 }
       );
     }
@@ -45,30 +39,21 @@ export async function POST(request) {
     }
 
     const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
-    const receipt = `lf_${String(user.id).slice(0, 8)}_${Date.now()}`;
     const order = await razorpay.orders.create({
-      amount: pkg.price_inr,
+      amount: amountPaise,
       currency: "INR",
-      receipt,
+      receipt: `order_${Date.now()}`,
       notes: {
+        plan_name: String(plan_name),
+        credits: String(credits),
         user_id: user.id,
-        email: user.email ?? "",
-        package_id: pkg.id,
-        package_name: pkg.name,
-        credits: String(pkg.credits),
       },
     });
 
-    const priceDisplay = `₹${(pkg.price_inr / 100).toLocaleString("en-IN")}`;
     return NextResponse.json({
       order_id: order.id,
-      amount: pkg.price_inr,
-      currency: "INR",
-      package: {
-        name: pkg.name,
-        credits: pkg.credits,
-        price_display: priceDisplay,
-      },
+      amount: order.amount,
+      currency: order.currency || "INR",
     });
   } catch (err) {
     console.error("[POST /api/razorpay/create-order]", err);

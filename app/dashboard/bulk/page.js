@@ -354,6 +354,7 @@ export default function BulkSearchPage() {
       alert("Razorpay is not configured.");
       return;
     }
+    const amountRupees = pkg.price != null ? pkg.price : (pkg.price_inr != null ? pkg.price_inr / 100 : 0);
     try {
       const orderRes = await fetch("/api/razorpay/create-order", {
         method: "POST",
@@ -361,7 +362,11 @@ export default function BulkSearchPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ package_id: pkg.id }),
+        body: JSON.stringify({
+          amount: amountRupees,
+          plan_name: pkg.name,
+          credits: pkg.credits,
+        }),
       });
       if (!orderRes.ok) {
         const err = await orderRes.json().catch(() => ({}));
@@ -375,10 +380,10 @@ export default function BulkSearchPage() {
         currency: currency || "INR",
         order_id,
         name: "Geonayan",
-        description: `${pkg.credits} Search Credits — Bulk Search`,
+        description: `${pkg.credits} Credits — ${pkg.name}`,
         handler: async function (response) {
           try {
-            const verifyRes = await fetch("/api/razorpay/verify", {
+            const verifyRes = await fetch("/api/razorpay/verify-payment", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -388,19 +393,17 @@ export default function BulkSearchPage() {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                package_id: pkg.id,
               }),
             });
-            if (!verifyRes.ok) {
-              const err = await verifyRes.json().catch(() => ({}));
-              alert(err.error || "Payment verification failed");
+            const data = await verifyRes.json().catch(() => ({}));
+            if (!verifyRes.ok || !data.success) {
+              alert(data.error || "Payment verification failed");
               return;
             }
-            const data = await verifyRes.json();
             setCredits(data.new_balance ?? credits + pkg.credits);
             setShowModal(false);
             await fetchCredits(session?.access_token);
-            alert(`Payment successful! ${data.credits_added} credits added.`);
+            alert(`🎉 ${data.credits_added} credits added!`);
             if (pauseReason === "insufficient_credits") {
               setPauseReason(null);
               processBulkSearch(currentIndex);
@@ -410,7 +413,10 @@ export default function BulkSearchPage() {
             alert("Verification failed. Please contact support if credits were charged.");
           }
         },
-        prefill: { email: session?.user?.email || "" },
+        prefill: {
+          email: session?.user?.email || "",
+          name: session?.user?.user_metadata?.full_name || "",
+        },
         theme: { color: "#22c55e" },
       };
       const rzp = new window.Razorpay(options);

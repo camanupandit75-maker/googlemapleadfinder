@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { createBrowserSupabase } from "@/lib/supabase";
 
 
 const PACKAGES = [
@@ -22,12 +24,111 @@ const FAQS = [
 ];
 
 export default function PricingPage() {
+    const router = useRouter();
+    const supabase = createBrowserSupabase();
     const [openFaq, setOpenFaq] = useState(null);
+    const [session, setSession] = useState(null);
+    const [authChecked, setAuthChecked] = useState(false);
+    const [paymentToast, setPaymentToast] = useState(null);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session: s } }) => {
+            setSession(s);
+            setAuthChecked(true);
+        });
+    }, [supabase.auth]);
+
+    const handleBuy = async (pkg) => {
+        if (!session) {
+            router.push("/login?from=/pricing");
+            return;
+        }
+        if (typeof window === "undefined" || !window.Razorpay) {
+            setPaymentToast({ type: "error", message: "Razorpay not loaded. Please refresh." });
+            return;
+        }
+        if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+            setPaymentToast({ type: "error", message: "Razorpay is not configured." });
+            return;
+        }
+        try {
+            const orderRes = await fetch("/api/razorpay/create-order", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    amount: pkg.price,
+                    plan_name: pkg.name,
+                    credits: pkg.credits,
+                }),
+            });
+            if (!orderRes.ok) {
+                const err = await orderRes.json().catch(() => ({}));
+                setPaymentToast({ type: "error", message: err.error || "Failed to create order" });
+                return;
+            }
+            const { order_id, amount, currency } = await orderRes.json();
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount,
+                currency: currency || "INR",
+                order_id,
+                name: "Geonayan",
+                description: `${pkg.credits} Credits — ${pkg.name}`,
+                handler: async function (response) {
+                    try {
+                        const verifyRes = await fetch("/api/razorpay/verify-payment", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${session.access_token}`,
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }),
+                        });
+                        const data = await verifyRes.json().catch(() => ({}));
+                        if (!verifyRes.ok || !data.success) {
+                            setPaymentToast({ type: "error", message: data.error || "Payment verification failed" });
+                            return;
+                        }
+                        setPaymentToast({ type: "success", message: `🎉 ${data.credits_added} credits added!` });
+                        setTimeout(() => setPaymentToast(null), 4000);
+                    } catch (e) {
+                        console.error(e);
+                        setPaymentToast({ type: "error", message: "Verification failed." });
+                    }
+                },
+                prefill: {
+                    email: session?.user?.email || "",
+                    name: session?.user?.user_metadata?.full_name || "",
+                },
+                theme: { color: "#22c55e" },
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } catch (e) {
+            console.error(e);
+            setPaymentToast({ type: "error", message: "Failed to start payment." });
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-950 text-white">
             <Navbar variant="dark" />
-
+            {paymentToast && (
+                <div
+                    className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-3 rounded-lg text-sm font-medium shadow-lg ${
+                        paymentToast.type === "success" ? "bg-[#22c55e] text-white" : "bg-red-500/90 text-white"
+                    }`}
+                >
+                    {paymentToast.message}
+                </div>
+            )}
             {/* ── Header ─────────────────────────────────────────────────────────── */}
             <section className="max-w-5xl mx-auto px-6 pt-16 pb-4 text-center animate-fade-in-up">
                 <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-4 tracking-tight">
@@ -90,15 +191,43 @@ export default function PricingPage() {
                                     ))}
                                 </ul>
 
+                                {authChecked && (
+                                <>
+                                    {session ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleBuy(pkg)}
+                                            className={`block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors duration-150 ${isPopular
+                                                ? "bg-brand-500 hover:bg-brand-600 text-white"
+                                                : "bg-white/10 hover:bg-white/15 text-white border border-white/10"
+                                            }`}
+                                        >
+                                            Buy
+                                        </button>
+                                    ) : (
+                                        <Link
+                                            href="/login?from=/pricing"
+                                            className={`block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors duration-150 ${isPopular
+                                                ? "bg-brand-500 hover:bg-brand-600 text-white"
+                                                : "bg-white/10 hover:bg-white/15 text-white border border-white/10"
+                                            }`}
+                                        >
+                                            Log in to Buy
+                                        </Link>
+                                    )}
+                                </>
+                            )}
+                            {!authChecked && (
                                 <Link
                                     href="/signup"
                                     className={`block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors duration-150 ${isPopular
-                                            ? "bg-brand-500 hover:bg-brand-600 text-white"
-                                            : "bg-white/10 hover:bg-white/15 text-white border border-white/10"
-                                        }`}
+                                        ? "bg-brand-500 hover:bg-brand-600 text-white"
+                                        : "bg-white/10 hover:bg-white/15 text-white border border-white/10"
+                                    }`}
                                 >
                                     Get Started
                                 </Link>
+                            )}
                             </div>
                         );
                     })}
