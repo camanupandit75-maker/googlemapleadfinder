@@ -41,7 +41,7 @@ function packageForCard(pkg) {
         features: [
             `${pkg.credits} search credits`,
             "Export to Excel & CSV",
-            "Google Places + SerpAPI",
+            "Maximum Coverage — always up-to-date",
             "Cached results at 0 cost",
         ],
     };
@@ -881,7 +881,7 @@ export default function DashboardPage() {
                         onClick={() => setShowModal(false)}
                     />
 
-                    <div className="relative glass-card bg-[#020617]/95 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 animate-fade-in-up">
+                    <div className="relative glass-card bg-[#020617]/95 shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto p-7 animate-fade-in-up">
                         <div className="flex items-start justify-between mb-6">
                             <div>
                                 <h2 className="font-display font-bold text-xl text-white">
@@ -901,7 +901,7 @@ export default function DashboardPage() {
                             </button>
                         </div>
 
-                        <div className="space-y-4 mb-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
                             {(packages.length ? packages.map(packageForCard) : DEFAULT_PACKAGES.map(packageForCard)).map((pkg) => (
                                 <PackageCard
                                     key={pkg.id}

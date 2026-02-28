@@ -9,9 +9,9 @@ import { createBrowserSupabase } from "@/lib/supabase";
 
 
 const PACKAGES = [
-    { id: "starter", name: "Starter", credits: 50, price: 499, features: ["50 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Email support", "Cached results at 0 cost"] },
-    { id: "growth", name: "Growth", credits: 200, price: 1499, features: ["200 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Priority support", "Cached results at 0 cost", "Bulk export"] },
-    { id: "pro", name: "Pro", credits: 500, price: 2999, features: ["500 search credits", "Export to Excel & CSV", "Google Places + SerpAPI", "Priority support", "Cached results at 0 cost", "Bulk export"] },
+    { id: "starter", name: "Starter", credits: 50, price: 499, features: ["50 search credits", "Export to Excel & CSV", "Maximum Coverage — always up-to-date", "Email support", "Cached results at 0 cost"] },
+    { id: "growth", name: "Growth", credits: 200, price: 1499, features: ["200 search credits", "Export to Excel & CSV", "Maximum Coverage — always up-to-date", "Priority support", "Cached results at 0 cost", "Bulk export"] },
+    { id: "pro", name: "Pro", credits: 500, price: 2999, features: ["500 search credits", "Export to Excel & CSV", "Maximum Coverage — always up-to-date", "Priority support", "Cached results at 0 cost", "Bulk export"] },
     { id: "enterprise", name: "Enterprise", credits: 2000, price: 9999, features: ["2,000 search credits", "Export to Excel & CSV", "All providers", "Dedicated support", "Cached results at 0 cost", "Bulk export", "API access"] },
 ];
 
@@ -40,7 +40,7 @@ export default function PricingPage() {
 
     const handleBuy = async (pkg) => {
         if (!session) {
-            router.push("/login?from=/pricing");
+            router.push(`/login?redirect=/pricing&plan=${encodeURIComponent(pkg.id)}`);
             return;
         }
         if (typeof window === "undefined" || !window.Razorpay) {
@@ -206,7 +206,7 @@ export default function PricingPage() {
                                         </button>
                                     ) : (
                                         <Link
-                                            href="/login?from=/pricing"
+                                            href={`/login?redirect=/pricing&plan=${encodeURIComponent(pkg.id)}`}
                                             className={`block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors duration-150 ${isPopular
                                                 ? "bg-brand-500 hover:bg-brand-600 text-white"
                                                 : "bg-white/10 hover:bg-white/15 text-white border border-white/10"

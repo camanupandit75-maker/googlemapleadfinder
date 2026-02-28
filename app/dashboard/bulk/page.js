@@ -54,7 +54,7 @@ function packageForCard(pkg) {
     features: [
       `${pkg.credits} search credits`,
       "Export to Excel & CSV",
-      "Google Places + SerpAPI",
+      "Maximum Coverage — always up-to-date",
       "Cached results at 0 cost",
     ],
   };
