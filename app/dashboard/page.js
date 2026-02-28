@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import { createBrowserSupabase } from "@/lib/supabase";
 import CreditBadge from "@/components/CreditBadge";
 import StatCard from "@/components/StatCard";
@@ -1120,6 +1121,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
             )}
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         </div>
     );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { createBrowserSupabase } from "@/lib/supabase";
@@ -760,6 +761,7 @@ Chartered Accountants,Business Bay Dubai`}
           </div>
         </div>
       )}
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
     </div>
   );
 }

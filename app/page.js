@@ -138,6 +138,7 @@ export default function LandingPage() {
         }}
       />
 
+      <main>
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center animate-fade-in-up">
         <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-tight mb-4 tracking-tight">
@@ -169,15 +170,15 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto text-center">
           <div>
             <p className="text-2xl md:text-3xl font-display font-bold text-white">35,000+</p>
-            <p className="text-sm text-slate-500">Searches Powered</p>
+            <p className="text-sm text-slate-400">Searches Powered</p>
           </div>
           <div>
             <p className="text-2xl md:text-3xl font-display font-bold text-white">800+</p>
-            <p className="text-sm text-slate-500">Results Exported</p>
+            <p className="text-sm text-slate-400">Results Exported</p>
           </div>
           <div>
             <p className="text-2xl md:text-3xl font-display font-bold text-white">195+</p>
-            <p className="text-sm text-slate-500">Works in 195+ Countries</p>
+            <p className="text-sm text-slate-400">Works in 195+ Countries</p>
           </div>
         </div>
       </section>
@@ -258,7 +259,7 @@ export default function LandingPage() {
               <p className="text-slate-300 text-base leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>
               <Stars />
               <h3 className="font-semibold text-white mt-3 text-base">{t.name}</h3>
-              <p className="text-sm text-slate-500">{t.designation}, {t.company}</p>
+              <p className="text-sm text-slate-400">{t.designation}, {t.company}</p>
             </div>
           ))}
         </div>
@@ -289,6 +290,7 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>

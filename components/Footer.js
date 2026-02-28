@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="border-t border-white/10 py-8 text-center">
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-slate-500 mb-3">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-slate-400 mb-3">
         <Link href="/privacy" className="text-slate-400 hover:text-[#22c55e] transition-colors">
           Privacy Policy
         </Link>
@@ -22,7 +22,7 @@ export default function Footer() {
           About
         </Link>
       </div>
-      <p className="text-sm text-slate-500 mb-2">
+      <p className="text-sm text-slate-400 mb-2">
         Find Leads in:{" "}
         <Link href="/leads/mumbai" className="text-slate-400 hover:text-[#22c55e] transition-colors">Mumbai</Link>
         {" | "}
@@ -36,13 +36,13 @@ export default function Footer() {
         {" | "}
         <Link href="/leads/hyderabad" className="text-slate-400 hover:text-[#22c55e] transition-colors">Hyderabad</Link>
       </p>
-      <p className="text-sm text-slate-500 mb-2">
+      <p className="text-sm text-slate-400 mb-2">
         🔒 Your data is secure. We never sell or share user information.
       </p>
       <p className="text-xs text-slate-600 mb-2">
         SSL Encrypted | Official Google Places API
       </p>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-400">
         © 2026 Geonayan
       </p>
     </footer>

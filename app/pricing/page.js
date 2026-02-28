@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -266,6 +267,7 @@ export default function PricingPage() {
             </section>
 
             <Footer />
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         </div>
     );
 }
