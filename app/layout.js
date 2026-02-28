@@ -1,5 +1,6 @@
 import { Plus_Jakarta_Sans, DM_Sans } from "next/font/google";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -37,6 +38,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-body antialiased">
         {children}
+        <Analytics />
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"
           strategy="lazyOnload"
