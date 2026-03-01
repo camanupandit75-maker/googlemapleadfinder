@@ -7,6 +7,19 @@ import { createBrowserSupabase } from "@/lib/supabase";
 
 const SAFE_REDIRECT_PATHS = ["/pricing", "/dashboard", "/dashboard/bulk", "/dashboard/map", "/dashboard/profile"];
 
+const AUTH_TIMEOUT_MS = 15000;
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1000;
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isNetworkError(err) {
+    const msg = (err?.message || String(err)).toLowerCase();
+    return msg.includes("fetch") || msg.includes("network") || msg.includes("failed to fetch") || err?.name === "TypeError";
+}
+
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -14,6 +27,7 @@ function LoginForm() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showRetry, setShowRetry] = useState(false);
     const [redirectTo, setRedirectTo] = useState("/dashboard");
 
     const supabase = createBrowserSupabase();
@@ -25,23 +39,50 @@ function LoginForm() {
         }
     }, [searchParams]);
 
+    const doLogin = async () => {
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            try {
+                const authPromise = supabase.auth.signInWithPassword({ email, password });
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Connection timeout")), AUTH_TIMEOUT_MS)
+                );
+                const { error: authError } = await Promise.race([authPromise, timeoutPromise]);
+                if (authError) throw authError;
+                router.push(redirectTo);
+                return;
+            } catch (err) {
+                const isLast = attempt === MAX_ATTEMPTS - 1;
+                if (isLast) {
+                    if (isNetworkError(err)) {
+                        setError("Connection slow — please try again");
+                        setShowRetry(true);
+                    } else {
+                        setError(err.message || "An error occurred during login.");
+                    }
+                    return;
+                }
+                await sleep(RETRY_DELAY_MS);
+            }
+        }
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setError("");
+        setShowRetry(false);
         setLoading(true);
-
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-            if (error) throw error;
-            router.push(redirectTo);
-        } catch (err) {
-            setError(err.message || "An error occurred during login.");
+            await doLogin();
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRetry = () => {
+        setError("");
+        setShowRetry(false);
+        setLoading(true);
+        doLogin().finally(() => setLoading(false));
     };
 
     const handleGoogleLogin = async () => {
@@ -120,8 +161,18 @@ function LoginForm() {
 
                         {/* Error */}
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2.5 rounded-lg">
-                                {error}
+                            <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2.5 rounded-lg space-y-2">
+                                <p>{error}</p>
+                                {showRetry && (
+                                    <button
+                                        type="button"
+                                        onClick={handleRetry}
+                                        disabled={loading}
+                                        className="text-brand-600 hover:text-brand-700 font-semibold underline disabled:opacity-50"
+                                    >
+                                        Retry
+                                    </button>
+                                )}
                             </div>
                         )}
 
