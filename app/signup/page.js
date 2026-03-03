@@ -64,7 +64,7 @@ export default function SignupPage() {
                         },
                     },
                 }),
-            { maxRetries: 3, retryDelayMs: 2000, onRetry: () => setError("Connection slow — retrying...") }
+            { maxRetries: 3, retryDelayMs: 2000 }
         );
         if (signUpError) throw signUpError;
         if (data?.session) {
@@ -114,7 +114,7 @@ export default function SignupPage() {
                             redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
                         },
                     }),
-                { maxRetries: 3, retryDelayMs: 2000, onRetry: () => setError("Connection slow — retrying...") }
+                { maxRetries: 3, retryDelayMs: 2000 }
             );
         } catch (err) {
             if (isNetworkError(err)) {
@@ -133,19 +133,18 @@ export default function SignupPage() {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
                 <div className="w-full max-w-sm text-center animate-fade-in-up">
-                    <div className="text-6xl mb-6">✉️</div>
+                    <div className="text-6xl mb-6">🎉</div>
                     <h1 className="font-display font-bold text-2xl text-white mb-3">
-                        Check your email
+                        Welcome to Geonayan!
                     </h1>
-                    <p className="text-slate-400 mb-2">
-                        We&apos;ve sent a confirmation link to
+                    <p className="text-slate-400 mb-6">
+                        Your account has been created successfully. You have 10 free credits to get started.
                     </p>
-                    <p className="text-brand-400 font-semibold mb-8">{email}</p>
                     <Link
                         href="/login"
-                        className="text-sm text-slate-400 hover:text-white transition-colors"
+                        className="inline-flex items-center justify-center px-4 py-2.5 bg-white text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors"
                     >
-                        ← Back to login
+                        Go to Login →
                     </Link>
                 </div>
             </div>

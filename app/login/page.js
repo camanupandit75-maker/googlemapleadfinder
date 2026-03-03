@@ -32,7 +32,7 @@ function LoginForm() {
         try {
             await authWithRetry(
                 () => supabase.auth.signInWithPassword({ email, password }),
-                { maxRetries: 3, retryDelayMs: 2000, onRetry: () => setError("Connection slow — retrying...") }
+                { maxRetries: 3, retryDelayMs: 2000 }
             );
             router.push(redirectTo);
         } catch (err) {
@@ -77,7 +77,7 @@ function LoginForm() {
                             redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
                         },
                     }),
-                { maxRetries: 3, retryDelayMs: 2000, onRetry: () => setError("Connection slow — retrying...") }
+                { maxRetries: 3, retryDelayMs: 2000 }
             );
         } catch (err) {
             if (isNetworkError(err)) {
