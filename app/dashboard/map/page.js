@@ -108,6 +108,9 @@ export default function MarketMapPage() {
   const [careerScanStats, setCareerScanStats] = useState(null);
   const [careerScanDialog, setCareerScanDialog] = useState(false);
   const [careerScanProgress, setCareerScanProgress] = useState({ current: 0, total: 0 });
+  const [enriching, setEnriching] = useState(false);
+  const [enrichmentStats, setEnrichmentStats] = useState(null);
+  const [enrichProgress, setEnrichProgress] = useState({ current: 0, total: 0 });
 
   const fetchCredits = useCallback(async (token) => {
     if (!token) return;
@@ -294,6 +297,47 @@ export default function MarketMapPage() {
     }
   };
 
+  const handleExportEnrichedOnly = async () => {
+    const enrichedOnly = allResults.filter((r) => (r.enriched_emails?.length ?? 0) > 0);
+    if (enrichedOnly.length === 0) return;
+    try {
+      const res = await fetch("/api/bulk-export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          results: enrichedOnly,
+          searches: localityResults.map((r) => ({ query: businessType, location: r.locality, result_count: r.count })),
+          stats: {
+            total_searches: localityResults.length,
+            total_results: enrichedOnly.length,
+            credits_used: 0,
+            cached_count: 0,
+            emails_found: enrichedOnly.reduce((s, r) => s + (r.enriched_emails?.length ?? 0), 0),
+          },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `market_map_enriched_only_${Date.now()}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      await fetchCredits(session?.access_token);
+    } catch (e) {
+      console.error(e);
+      alert("Export failed. Please try again.");
+    }
+  };
+
   const handleExportHiringOnly = async () => {
     const hiringOnly = allResults.filter((r) => r.is_hiring === true);
     if (hiringOnly.length === 0) return;
@@ -413,6 +457,79 @@ export default function MarketMapPage() {
     }
   };
 
+  const mergeEnrichChunkIntoMap = (currentResults, currentLocalityResults, chunkEnriched) => {
+    const mergedMap = new Map();
+    chunkEnriched.forEach((r) => {
+      const key = [r.source_query, r.source_location, r.name].filter(Boolean).join("|");
+      if (key) mergedMap.set(key, r);
+    });
+    const newAll = currentResults.map((r) => {
+      const key = [r.source_query, r.source_location, r.name].filter(Boolean).join("|");
+      return mergedMap.get(key) ?? r;
+    });
+    const newLocality = currentLocalityResults.map((loc) => ({
+      ...loc,
+      results: (loc.results ?? []).map((row) => {
+        const key = [row.source_query, row.source_location, row.name].filter(Boolean).join("|");
+        return mergedMap.get(key) ?? row;
+      }),
+    }));
+    return { newAll, newLocality };
+  };
+
+  const handleEnrich = async () => {
+    const withWebsites = allResults.filter((r) => !!(r.website ?? r.websiteUri ?? "").trim());
+    if (!withWebsites.length || enriching) return;
+    setEnriching(true);
+    setEnrichmentStats(null);
+    setEnrichProgress({ current: 0, total: withWebsites.length });
+    try {
+      const chunkSize = 10;
+      const total = withWebsites.length;
+      let mergedAll = allResults;
+      let mergedLocality = localityResults;
+      let aggStats = { emails_found: 0, phones_found: 0, whatsapp_found: 0, with_websites: 0, enriched: 0 };
+      for (let i = 0; i < total; i += chunkSize) {
+        const chunk = withWebsites.slice(i, i + chunkSize);
+        const res = await fetch("/api/enrich", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ results: chunk }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Enrichment failed");
+          break;
+        }
+        const chunkResults = data.enriched ?? [];
+        const { newAll, newLocality } = mergeEnrichChunkIntoMap(mergedAll, mergedLocality, chunkResults);
+        mergedAll = newAll;
+        mergedLocality = newLocality;
+        setAllResults(mergedAll);
+        setLocalityResults(mergedLocality);
+        setEnrichProgress({ current: Math.min(i + chunkSize, total), total });
+        if (data.stats) {
+          aggStats.emails_found += data.stats.emails_found ?? 0;
+          aggStats.phones_found += data.stats.phones_found ?? 0;
+          aggStats.whatsapp_found += data.stats.whatsapp_found ?? 0;
+          aggStats.with_websites += data.stats.with_websites ?? 0;
+          aggStats.enriched += data.stats.enriched ?? 0;
+        }
+      }
+      setEnrichmentStats(aggStats);
+      await fetchCredits(session?.access_token);
+    } catch (e) {
+      console.error(e);
+      alert("Enrichment failed. Please try again.");
+    } finally {
+      setEnriching(false);
+      setEnrichProgress({ current: 0, total: 0 });
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
@@ -430,6 +547,17 @@ export default function MarketMapPage() {
   const totalHiring = hiringByLocality.reduce((s, x) => s + x.hiring, 0);
   const localitiesWithHiring = hiringByLocality.filter((x) => x.hiring > 0).length;
   const topHiringArea = [...hiringByLocality].sort((a, b) => b.hiring - a.hiring)[0];
+  const emailByLocality = localityResults.map((loc) => ({
+    locality: loc.locality,
+    withEmail: (loc.results ?? []).filter((r) => (r.enriched_emails?.length ?? 0) > 0).length,
+    count: loc.count ?? (loc.results ?? []).length,
+  }));
+  const totalWithEmails = emailByLocality.reduce((s, x) => s + x.withEmail, 0);
+  const localitiesWithEmails = emailByLocality.filter((x) => x.withEmail > 0).length;
+  const bestEmailCoverage = [...emailByLocality]
+    .filter((x) => x.count > 0)
+    .map((x) => ({ ...x, pct: (x.withEmail / x.count) * 100 }))
+    .sort((a, b) => b.pct - a.pct)[0];
   const confidenceOrder = { high: 0, medium: 1, low: 2 };
   const hiringOnlyList = [...allResults]
     .filter((r) => r.is_hiring === true)
@@ -615,6 +743,9 @@ export default function MarketMapPage() {
                     {careerScanStats && (
                       <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Hiring</th>
                     )}
+                    {enrichmentStats && (
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Emails Found</th>
+                    )}
                     <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400">Top Business</th>
                   </tr>
                 </thead>
@@ -634,6 +765,11 @@ export default function MarketMapPage() {
                           <span className="font-medium" style={{ color: getHiringColor(hiringByLocality.find((h) => h.locality === r.locality)?.hiring ?? 0) }}>
                             {hiringByLocality.find((h) => h.locality === r.locality)?.hiring ?? 0}
                           </span>
+                        </td>
+                      )}
+                      {enrichmentStats && (
+                        <td className="px-4 py-3 text-slate-300">
+                          {emailByLocality.find((e) => e.locality === r.locality)?.withEmail ?? 0}
                         </td>
                       )}
                       <td className="px-4 py-3 text-slate-400 truncate max-w-[180px]">{r.topBusinesses?.[0] ?? "—"}</td>
@@ -679,6 +815,16 @@ export default function MarketMapPage() {
                 {bestPhoneCoverage && bestPhoneCoverage.count > 0 && (
                   <p className="text-slate-300">
                     📱 Best Phone Coverage: <span className="text-white font-medium">{bestPhoneCoverage.locality}</span> ({Math.round((bestPhoneCoverage.withPhone / bestPhoneCoverage.count) * 100)}% have phone)
+                  </p>
+                )}
+                {enrichmentStats && totalWithEmails > 0 && (
+                  <p className="text-slate-300">
+                    📧 Email Coverage: <span className="text-white font-medium">{totalWithEmails} businesses</span> with emails across {localitiesWithEmails} localities
+                  </p>
+                )}
+                {enrichmentStats && bestEmailCoverage && bestEmailCoverage.withEmail > 0 && (
+                  <p className="text-slate-300">
+                    📧 Best Email Coverage: <span className="text-white font-medium">{bestEmailCoverage.locality}</span> ({Math.round(bestEmailCoverage.pct)}% have emails)
                   </p>
                 )}
               </div>
@@ -776,6 +922,14 @@ export default function MarketMapPage() {
                   Export Hiring Only
                 </button>
               )}
+              {enrichmentStats && totalWithEmails > 0 && (
+                <button
+                  onClick={handleExportEnrichedOnly}
+                  className="border-2 border-[#22c55e]/50 text-[#22c55e] hover:bg-[#22c55e]/10 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  Export Enriched Only
+                </button>
+              )}
               {careerScanning && careerScanProgress.total > 0 ? (
                 <div className="flex flex-col gap-1.5 min-w-[220px]">
                   <span className="text-slate-300 text-sm font-medium">
@@ -797,10 +951,36 @@ export default function MarketMapPage() {
                   {careerScanStats ? "✅ Scan All for Hiring" : "🏢 Scan All for Hiring"}
                 </button>
               )}
+              {enriching && enrichProgress.total > 0 ? (
+                <div className="flex flex-col gap-1.5 min-w-[220px]">
+                  <span className="text-slate-300 text-sm font-medium">
+                    📧 Enriching... {enrichProgress.current}/{enrichProgress.total} businesses ({Math.round((enrichProgress.current / enrichProgress.total) * 100)}%)
+                  </span>
+                  <div className="h-2 rounded overflow-hidden transition-all duration-300 ease-out" style={{ background: "rgba(255,255,255,0.1)", borderRadius: 4 }}>
+                    <div
+                      className="h-full rounded bg-[#22c55e] transition-all duration-300 ease-out"
+                      style={{ width: `${(enrichProgress.current / enrichProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleEnrich}
+                  disabled={enriching || !allResults.some((r) => !!(r.website ?? r.websiteUri ?? "").trim()) || !!enrichmentStats}
+                  className="border-2 border-[#22c55e]/50 text-[#22c55e] hover:bg-[#22c55e]/10 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  {enrichmentStats ? "✅ Enrich All for Emails" : "📧 Enrich All for Emails"}
+                </button>
+              )}
             </div>
             {careerScanStats && !careerScanning && (
               <p className="text-cyan-400/90 text-sm mb-6">
                 🏢 Career Scan: {careerScanStats.hiring} actively hiring, {careerScanStats.with_job_titles} with job listings | {careerScanStats.credits_used} credit{careerScanStats.credits_used !== 1 ? "s" : ""} used
+              </p>
+            )}
+            {enrichmentStats && !enriching && (
+              <p className="text-[#22c55e]/90 text-sm mb-6">
+                📧 Enrichment: {enrichmentStats.emails_found} emails, {enrichmentStats.phones_found} phones{enrichmentStats.whatsapp_found ? `, ${enrichmentStats.whatsapp_found} WhatsApp` : ""} from {enrichmentStats.with_websites} websites
               </p>
             )}
 
