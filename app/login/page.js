@@ -26,6 +26,15 @@ function LoginForm() {
         if (redirect && SAFE_REDIRECT_PATHS.includes(redirect)) {
             setRedirectTo(redirect);
         }
+
+        const errorParam = searchParams.get("error");
+        if (errorParam === "oauth_timeout") {
+            setError("Login took too long — please try again.");
+            setShowRetry(false);
+        } else if (errorParam === "config") {
+            setError("Login is temporarily unavailable. Please try again later.");
+            setShowRetry(false);
+        }
     }, [searchParams]);
 
     const doLogin = async () => {

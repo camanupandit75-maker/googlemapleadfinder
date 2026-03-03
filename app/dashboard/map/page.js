@@ -6,49 +6,12 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import * as XLSX from "xlsx";
 import { createBrowserSupabase } from "@/lib/supabase";
+import { getLocalitiesByCity, getMapCityNames } from "@/lib/city-leads-data";
 import CreditBadge from "@/components/CreditBadge";
 
 import "leaflet/dist/leaflet.css";
 
-const CITY_LOCALITIES = {
-  Delhi: [
-    "Connaught Place Delhi", "Dwarka Delhi", "Rohini Delhi", "Karol Bagh Delhi", "Laxmi Nagar Delhi", "Pitampura Delhi",
-    "Janakpuri Delhi", "Saket Delhi", "Nehru Place Delhi", "Rajouri Garden Delhi", "Preet Vihar Delhi", "Mayur Vihar Delhi",
-    "Vasant Kunj Delhi", "Greater Kailash Delhi", "Defence Colony Delhi", "Hauz Khas Delhi", "Chandni Chowk Delhi", "Patel Nagar Delhi",
-    "Kalkaji Delhi", "Tilak Nagar Delhi",
-  ],
-  Mumbai: [
-    "Andheri Mumbai", "Bandra Mumbai", "Dadar Mumbai", "Borivali Mumbai", "Thane Mumbai", "Malad Mumbai",
-    "Goregaon Mumbai", "Powai Mumbai", "Lower Parel Mumbai", "Fort Mumbai", "Churchgate Mumbai", "Juhu Mumbai",
-    "Kandivali Mumbai", "Mulund Mumbai", "Vikhroli Mumbai", "Chembur Mumbai", "Navi Mumbai", "Vashi Mumbai",
-    "BKC Mumbai", "Worli Mumbai",
-  ],
-  Bangalore: [
-    "Koramangala Bangalore", "Indiranagar Bangalore", "HSR Layout Bangalore", "Whitefield Bangalore", "Electronic City Bangalore", "Jayanagar Bangalore",
-    "JP Nagar Bangalore", "Marathahalli Bangalore", "BTM Layout Bangalore", "Malleshwaram Bangalore", "Rajajinagar Bangalore", "Hebbal Bangalore",
-    "Yelahanka Bangalore", "Banashankari Bangalore", "MG Road Bangalore", "Sadashivanagar Bangalore", "RT Nagar Bangalore", "Basavanagudi Bangalore",
-    "Vijayanagar Bangalore", "Bannerghatta Road Bangalore",
-  ],
-  Gurgaon: [
-    "Sector 14 Gurgaon", "Sector 29 Gurgaon", "DLF Phase 1 Gurgaon", "DLF Phase 3 Gurgaon", "Sohna Road Gurgaon", "MG Road Gurgaon",
-    "Golf Course Road Gurgaon", "Sector 56 Gurgaon", "Sector 49 Gurgaon", "Udyog Vihar Gurgaon", "Palam Vihar Gurgaon", "South City Gurgaon",
-    "Sector 15 Gurgaon", "Sector 44 Gurgaon", "Cyber City Gurgaon",
-  ],
-  Chennai: [
-    "T Nagar Chennai", "Anna Nagar Chennai", "Adyar Chennai", "Velachery Chennai", "Tambaram Chennai", "OMR Chennai",
-    "Mylapore Chennai", "Nungambakkam Chennai", "Egmore Chennai", "Porur Chennai", "Guindy Chennai", "Chromepet Chennai",
-    "Kilpauk Chennai", "Kodambakkam Chennai", "Thiruvanmiyur Chennai",
-  ],
-  Hyderabad: [
-    "Ameerpet Hyderabad", "Madhapur Hyderabad", "HITEC City Hyderabad", "Banjara Hills Hyderabad", "Jubilee Hills Hyderabad", "Kukatpally Hyderabad",
-    "Gachibowli Hyderabad", "Secunderabad", "Begumpet Hyderabad", "Dilsukhnagar Hyderabad", "LB Nagar Hyderabad", "Abids Hyderabad",
-    "Kondapur Hyderabad", "Miyapur Hyderabad", "Uppal Hyderabad",
-  ],
-  Dubai: [
-    "Business Bay Dubai", "DIFC Dubai", "Deira Dubai", "Bur Dubai", "JLT Dubai", "Downtown Dubai",
-    "Dubai Marina", "Al Barsha Dubai", "Karama Dubai", "International City Dubai", "Silicon Oasis Dubai", "JBR Dubai",
-  ],
-};
+const CITY_LOCALITIES = getLocalitiesByCity();
 
 const CITY_CENTERS = {
   Delhi: { lat: 28.6139, lng: 77.209, zoom: 11 },
@@ -57,10 +20,52 @@ const CITY_CENTERS = {
   Gurgaon: { lat: 28.4595, lng: 77.0266, zoom: 12 },
   Chennai: { lat: 13.0827, lng: 80.2707, zoom: 11 },
   Hyderabad: { lat: 17.385, lng: 78.4867, zoom: 11 },
+  Jaipur: { lat: 26.9124, lng: 75.7873, zoom: 11 },
+  Indore: { lat: 22.7196, lng: 75.8577, zoom: 11 },
+  Pune: { lat: 18.5204, lng: 73.8567, zoom: 11 },
+  Ahmedabad: { lat: 23.0225, lng: 72.5714, zoom: 11 },
+  Kolkata: { lat: 22.5726, lng: 88.3639, zoom: 11 },
+  Lucknow: { lat: 26.8467, lng: 80.9462, zoom: 11 },
+  Chandigarh: { lat: 30.7333, lng: 76.7794, zoom: 11 },
+  Noida: { lat: 28.5355, lng: 77.391, zoom: 11 },
+  Kochi: { lat: 9.9312, lng: 76.2673, zoom: 11 },
+  Coimbatore: { lat: 11.0168, lng: 76.9558, zoom: 11 },
+  Nagpur: { lat: 21.1458, lng: 79.0882, zoom: 11 },
+  Surat: { lat: 21.1702, lng: 72.8311, zoom: 11 },
+  Vadodara: { lat: 22.3072, lng: 73.1812, zoom: 11 },
+  Bhopal: { lat: 23.2599, lng: 77.4126, zoom: 11 },
+  Visakhapatnam: { lat: 17.6868, lng: 83.2185, zoom: 11 },
   Dubai: { lat: 25.2048, lng: 55.2708, zoom: 11 },
+  "Abu Dhabi": { lat: 24.4539, lng: 54.3773, zoom: 11 },
+  Sharjah: { lat: 25.3463, lng: 55.4209, zoom: 11 },
+  Johannesburg: { lat: -26.2041, lng: 28.0473, zoom: 10 },
+  "Cape Town": { lat: -33.9249, lng: 18.4241, zoom: 10 },
+  Durban: { lat: -29.8587, lng: 31.0218, zoom: 10 },
+  "New York": { lat: 40.7128, lng: -74.006, zoom: 10 },
+  "Los Angeles": { lat: 34.0522, lng: -118.2437, zoom: 10 },
+  Chicago: { lat: 41.8781, lng: -87.6298, zoom: 10 },
+  Houston: { lat: 29.7604, lng: -95.3698, zoom: 10 },
+  Miami: { lat: 25.7617, lng: -80.1918, zoom: 10 },
+  Tokyo: { lat: 35.6762, lng: 139.6503, zoom: 10 },
+  Osaka: { lat: 34.6937, lng: 135.5023, zoom: 10 },
+  London: { lat: 51.5074, lng: -0.1278, zoom: 10 },
+  Manchester: { lat: 53.4808, lng: -2.2426, zoom: 11 },
+  Birmingham: { lat: 52.4862, lng: -1.8904, zoom: 11 },
+  Berlin: { lat: 52.52, lng: 13.405, zoom: 10 },
+  Munich: { lat: 48.1351, lng: 11.582, zoom: 10 },
+  Frankfurt: { lat: 50.1109, lng: 8.6821, zoom: 10 },
+  Paris: { lat: 48.8566, lng: 2.3522, zoom: 10 },
+  Lyon: { lat: 45.764, lng: 4.8357, zoom: 11 },
+  Singapore: { lat: 1.3521, lng: 103.8198, zoom: 11 },
+  Sydney: { lat: -33.8688, lng: 151.2093, zoom: 10 },
+  Melbourne: { lat: -37.8136, lng: 144.9631, zoom: 10 },
+  Toronto: { lat: 43.6532, lng: -79.3832, zoom: 10 },
+  Vancouver: { lat: 49.2827, lng: -123.1207, zoom: 10 },
+  Riyadh: { lat: 24.7136, lng: 46.6753, zoom: 10 },
+  Jeddah: { lat: 21.5433, lng: 39.1728, zoom: 10 },
 };
 
-const CITIES = Object.keys(CITY_LOCALITIES);
+const CITIES = getMapCityNames();
 
 function getRadius(count) {
   if (count <= 5) return 8;

@@ -34,11 +34,32 @@ export async function GET(request) {
       },
     });
 
-    try {
-      await supabase.auth.exchangeCodeForSession(code);
-    } catch (err) {
-      console.error("[auth/callback] exchangeCodeForSession", err);
-      return NextResponse.redirect(new URL("/login?error=auth", requestUrl.origin));
+    let lastError = null;
+    const maxRetries = 2;
+    const retryDelayMs = 750;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        await supabase.auth.exchangeCodeForSession(code);
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+        console.error(`[auth/callback] exchangeCodeForSession attempt ${attempt + 1} failed`, err);
+        if (attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        }
+      }
+    }
+
+    if (lastError) {
+      console.error("[auth/callback] exchangeCodeForSession failed after retries", lastError);
+      const loginUrl = new URL("/login", requestUrl.origin);
+      loginUrl.searchParams.set("error", "oauth_timeout");
+      if (next && next !== "/dashboard") {
+        loginUrl.searchParams.set("redirect", next);
+      }
+      return NextResponse.redirect(loginUrl);
     }
   }
 
