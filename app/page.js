@@ -164,6 +164,12 @@ export default function LandingPage() {
           >
             View Pricing
           </Link>
+          <Link
+            href="/demo"
+            className="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-medium px-8 py-3.5 rounded-xl text-base transition-all duration-150"
+          >
+            Book a Demo
+          </Link>
         </div>
 
         {/* Social proof stats */}

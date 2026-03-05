@@ -21,6 +21,10 @@ export default function Footer() {
         <Link href="/about" className="text-slate-400 hover:text-[#22c55e] transition-colors">
           About
         </Link>
+        <span className="text-slate-600">|</span>
+        <Link href="/demo" className="text-slate-400 hover:text-[#22c55e] transition-colors">
+          Request Demo
+        </Link>
       </div>
       <p className="text-sm text-slate-400 mb-2">
         India:{" "}
