@@ -223,6 +223,21 @@ export default function MarketMapPage() {
         setTotalBusinesses(total);
         setLocalityStatus((prev) => ({ ...prev, [locality]: "done" }));
         setCredits(data.credits_remaining ?? credits);
+        fetch("/api/log-search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            search_type: "market_map",
+            business_type: businessType,
+            location: locality,
+            provider: "google_places",
+            results_count: placeList.length,
+            credits_used: data.cached ? 0 : (data.credits_used ?? 1),
+          }),
+        }).catch(() => {});
       } catch (err) {
         console.error(err);
         setLocalityStatus((prev) => ({ ...prev, [locality]: "failed" }));

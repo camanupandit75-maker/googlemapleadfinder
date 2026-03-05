@@ -241,6 +241,21 @@ export default function DashboardPage() {
             setEnrichmentStats(null);
             setCareerScanStats(null);
             setLastQuery((prev) => prev ? { ...prev, creditsUsed: data.credits_used ?? 1 } : null);
+            fetch("/api/log-search", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    search_type: "single",
+                    business_type: business,
+                    location: locality ?? "",
+                    provider: provider === "serpapi" ? "serpapi" : "google_places",
+                    results_count: (data.results ?? []).length,
+                    credits_used: data.credits_used ?? 1,
+                }),
+            }).catch(() => {});
             await fetchCredits(session?.access_token);
         } catch (e) {
             console.error(e);

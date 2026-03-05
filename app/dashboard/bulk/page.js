@@ -262,6 +262,21 @@ export default function BulkSearchPage() {
         setSearchesDone(done);
         setRowStatus((prev) => ({ ...prev, [i]: "done" }));
         setCredits(data.credits_remaining ?? credits);
+        fetch("/api/log-search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            search_type: "bulk",
+            business_type: row.business_type,
+            location: row.location ?? "",
+            provider: "google_places",
+            results_count: (data.results || []).length,
+            credits_used: data.cached ? 0 : (data.credits_used ?? 1),
+          }),
+        }).catch(() => {});
 
         await new Promise((r) => setTimeout(r, 1000));
       } catch (err) {
