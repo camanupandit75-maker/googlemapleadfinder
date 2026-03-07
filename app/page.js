@@ -211,6 +211,39 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How Geonayan Works */}
+      <section className="max-w-4xl mx-auto px-6 pb-16">
+        <h2 className="font-display font-bold text-3xl text-center mb-10 animate-fade-in">
+          How Geonayan Works
+        </h2>
+        <div className="space-y-8">
+          <div className="glass-card p-6 animate-fade-in-up">
+            <h3 className="font-display font-semibold text-lg text-white mb-2">Step 1: Enter a business type and city</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Type what you&apos;re looking for and where — for example &quot;CA firms in Mumbai&quot; or &quot;tax consultants in Connaught Place&quot;. You can use any city, PIN code, or locality name. Geonayan supports India, UAE, and 195+ countries, so you can search wherever your clients are.
+            </p>
+          </div>
+          <div className="glass-card p-6 animate-fade-in-up">
+            <h3 className="font-display font-semibold text-lg text-white mb-2">Step 2: Get 20+ results with phone, email, website, ratings</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Each search returns up to 20 verified results from Google Maps. You get business name, phone number, address, website, Google rating, and review count. Our email enrichment pulls contact emails from business websites so you often get an email address too — not just a listing.
+            </p>
+          </div>
+          <div className="glass-card p-6 animate-fade-in-up">
+            <h3 className="font-display font-semibold text-lg text-white mb-2">Step 3: Score leads with AI — know who to contact first</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Geonayan&apos;s lead scoring helps you prioritize. See which businesses have the best ratings, most reviews, and complete data (phone + email). Filter by &quot;has email&quot; or &quot;has phone&quot; so your sales team focuses on the leads most likely to respond.
+            </p>
+          </div>
+          <div className="glass-card p-6 animate-fade-in-up">
+            <h3 className="font-display font-semibold text-lg text-white mb-2">Step 4: Export to Excel and start outreach</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Download all results to Excel or CSV with one click. No copy-paste — your list is ready for cold calling, email campaigns, or CRM import. Repeat searches in the same area use cached data at zero extra cost, so you can refine without burning credits.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing anchor */}
       <section className="max-w-2xl mx-auto px-6 pb-16 text-center">
         <h2 className="font-display font-bold text-3xl text-center mb-4">
@@ -246,6 +279,113 @@ export default function LandingPage() {
               <p className="text-sm text-slate-400 leading-relaxed">{d.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Why Businesses Choose Geonayan */}
+      <section className="max-w-4xl mx-auto px-6 pb-24">
+        <h2 className="font-display font-bold text-3xl text-center mb-10 animate-fade-in">
+          Why Businesses Choose Geonayan
+        </h2>
+        <div className="space-y-6">
+          <div className="glass-card p-5">
+            <h3 className="font-display font-semibold text-white mb-2">No Chrome extension needed — works in any browser</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Geonayan runs in your browser. No plugins, no installs. Log in from any device, search from anywhere, and export to Excel. Perfect for teams that switch between laptops and shared workstations or work from multiple locations.
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <h3 className="font-display font-semibold text-white mb-2">Official Google Maps data — not scraped or outdated</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              We use the official Google Places API so the data you get is the same as what appears on Google Maps — verified, up to date, and compliant. No scraping, no risky workarounds. Your results are reliable and your workflow is above board.
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <h3 className="font-display font-semibold text-white mb-2">₹10 per search — cheaper than any competitor</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Credits start at just ₹10 per search. No monthly fees, no lock-in. You get 10 free searches on signup. Compare that to directory listings that cost ₹24,000 a year or per-lead tools that charge per contact. Geonayan is built for volume without the premium price.
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <h3 className="font-display font-semibold text-white mb-2">Works in 195+ countries — India, UAE, UK, USA, and more</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Search any city or locality worldwide. Popular coverage includes Mumbai, Delhi, Bangalore, Dubai, London, New York, Singapore, Sydney, and hundreds more. Whether you serve local clients or expand internationally, Geonayan scales with you.
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <h3 className="font-display font-semibold text-white mb-2">Your data is never shared or sold</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              We don&apos;t sell or share your search history, contact lists, or account data. Your leads are yours. We use industry-standard security and only process what&apos;s needed to run the product. Your trust and your data stay protected.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Frequently Asked Questions */}
+      <section className="max-w-3xl mx-auto px-6 pb-24">
+        <h2 className="font-display font-bold text-3xl text-center mb-10 animate-fade-in">
+          Frequently Asked Questions
+        </h2>
+        <div className="space-y-8">
+          <div>
+            <h3 className="font-display font-semibold text-lg text-white mb-2">What is Geonayan?</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Geonayan is a B2B lead generation tool that helps you find business leads from Google Maps. Search any PIN code or city to get phone numbers, emails, ratings and export to Excel.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-lg text-white mb-2">Is Geonayan free to use?</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Yes, you get 10 free searches when you sign up. No credit card required. After that, credits start at just ₹499.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-lg text-white mb-2">What data can I extract?</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Business name, phone number, address, ratings, reviews, website, email, WhatsApp, LinkedIn, hiring status, and AI lead scoring.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-lg text-white mb-2">Which cities does Geonayan cover?</h3>
+            <p className="text-slate-400 leading-relaxed">
+              Geonayan works globally using Google Maps data. Popular cities include Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Gurgaon, Dubai, and any city worldwide.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-lg text-white mb-2">How is Geonayan different from JustDial?</h3>
+            <p className="text-slate-400 leading-relaxed">
+              JustDial is passive — you pay to be listed. Geonayan is active — you search, find leads with emails and phone numbers, score them, and export to Excel. Starting at ₹499 vs ₹24,000/year.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Popular cities — internal linking */}
+      <section className="max-w-4xl mx-auto px-6 pb-24 text-center">
+        <h2 className="font-display font-bold text-3xl mb-4">Find leads in your city</h2>
+        <p className="text-slate-400 mb-8 max-w-xl mx-auto">
+          Search by locality or PIN code. Get phone numbers, emails, and ratings — export to Excel in seconds.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link href="/leads/mumbai" className="text-brand-400 hover:text-brand-300 font-medium">Mumbai</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/delhi" className="text-brand-400 hover:text-brand-300 font-medium">Delhi</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/bangalore" className="text-brand-400 hover:text-brand-300 font-medium">Bangalore</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/chennai" className="text-brand-400 hover:text-brand-300 font-medium">Chennai</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/hyderabad" className="text-brand-400 hover:text-brand-300 font-medium">Hyderabad</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/pune" className="text-brand-400 hover:text-brand-300 font-medium">Pune</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/kolkata" className="text-brand-400 hover:text-brand-300 font-medium">Kolkata</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/dubai" className="text-brand-400 hover:text-brand-300 font-medium">Dubai</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/london" className="text-brand-400 hover:text-brand-300 font-medium">London</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/leads/singapore" className="text-brand-400 hover:text-brand-300 font-medium">Singapore</Link>
         </div>
       </section>
 
@@ -295,6 +435,17 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Founder / About */}
+      <section className="max-w-2xl mx-auto px-6 pb-24 text-center">
+        <p className="font-display font-semibold text-white mb-2">Built by Manu Pandit, Chartered Accountant & Founder</p>
+        <p className="text-slate-400 leading-relaxed mb-4">
+          Geonayan was built to solve a real problem — finding quality B2B leads in India without expensive tools or manual searching. As a CA, I know how valuable the right business contacts are.
+        </p>
+        <Link href="/about" className="text-brand-400 hover:text-brand-300 font-medium">
+          Read full bio →
+        </Link>
       </section>
       </main>
 

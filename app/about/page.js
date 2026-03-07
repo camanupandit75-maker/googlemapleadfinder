@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 
 const STATS = [
   { value: "35,000+", label: "searches powered monthly" },
-  { value: "6 Cities", label: "with pre-built market maps" },
+  { value: "195+ Countries", label: "with search coverage" },
   { value: "40%", label: "average email extraction rate from business websites" },
 ];
 
@@ -60,18 +60,32 @@ export default function AboutPage() {
         <section className="mb-14 animate-fade-in-up">
           <h2 className="font-display font-semibold text-lg text-white mb-3">Team</h2>
           <p className="text-slate-400 leading-relaxed">
-            Built by <span className="text-white font-medium">Bharat AI Academy</span> — serving clients across India and MENA.
+            Built by <span className="text-white font-medium">Manu Pandit, CA</span> — serving clients across India and MENA.
           </p>
         </section>
 
         {/* CTA */}
-        <section className="text-center pt-4 animate-fade-in-up">
+        <section className="text-center pt-4 animate-fade-in-up space-y-4">
           <Link
-            href="/signup"
-            className="inline-block bg-[#22c55e] hover:bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors"
+            href="/"
+            className="block text-brand-400 hover:text-brand-300 font-medium text-sm"
           >
-            Start your first search — 10 free credits on signup
+            ← Back to Homepage
           </Link>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/signup"
+              className="inline-block bg-[#22c55e] hover:bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors"
+            >
+              Start your first search — 10 free credits on signup
+            </Link>
+            <Link
+              href="/demo"
+              className="inline-block border border-slate-600 hover:border-slate-500 text-slate-300 font-medium px-8 py-3.5 rounded-xl transition-colors"
+            >
+              Request a Demo
+            </Link>
+          </div>
         </section>
       </main>
 

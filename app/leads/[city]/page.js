@@ -54,6 +54,42 @@ export default function CityLeadsPage({ params }) {
         </div>
       </section>
 
+      {cityData.extendedContent && (
+        <section className="max-w-3xl mx-auto px-6 pb-12">
+          <div className="prose prose-invert max-w-none">
+            <p className="text-slate-300 leading-relaxed whitespace-pre-line">
+              {cityData.extendedContent}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {cityData.businessCategories && cityData.businessCategories.length > 0 && (
+        <section className="max-w-3xl mx-auto px-6 pb-12">
+          <h2 className="font-display font-bold text-2xl text-white mb-4">
+            Top business categories searched in {cityData.name}
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {cityData.businessCategories.map((cat) => (
+              <li key={cat}>
+                <span className="inline-block px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-sm">
+                  {cat}
+                </span>
+            </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="max-w-3xl mx-auto px-6 pb-12">
+        <h2 className="font-display font-bold text-2xl text-white mb-4">
+          How to find businesses in {cityData.name} using Geonayan
+        </h2>
+        <p className="text-slate-300 leading-relaxed mb-4">
+          Enter your business type (e.g. chartered accountants, law firms, or tax consultants) and a locality or PIN code in {cityData.name}. Geonayan returns up to 20 results with phone numbers, emails, websites, and ratings. Filter by data quality, export to Excel, and start outreach. Sample localities to try: {cityData.localities.slice(0, 3).join(", ")}.
+        </p>
+      </section>
+
       <section className="max-w-4xl mx-auto px-6 pb-12">
         <h2 className="font-display font-bold text-2xl text-white mb-4">
           Localities covered in the {cityData.name} heatmap
@@ -77,7 +113,28 @@ export default function CityLeadsPage({ params }) {
           Start Searching in {cityData.name} →
         </Link>
         <p className="text-slate-500 text-sm mt-3">10 free searches on signup — no credit card required</p>
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+          <Link href="/pricing" className="text-brand-400 hover:text-brand-300 font-medium text-sm">Pricing</Link>
+          <span className="text-slate-600">|</span>
+          <Link href="/demo" className="text-brand-400 hover:text-brand-300 font-medium text-sm">Request a Demo</Link>
+        </div>
       </section>
+
+      {cityData.relatedSlugs && cityData.relatedSlugs.length > 0 && (
+        <section className="max-w-3xl mx-auto px-6 pb-12 text-center">
+          <p className="text-slate-400 text-sm mb-2">Also search for leads in:</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            {cityData.relatedSlugs.map((s, i) => (
+              <span key={s}>
+                {i > 0 && <span className="text-slate-600 mx-1">|</span>}
+                <Link href={`/leads/${s}`} className="text-brand-400 hover:text-brand-300 font-medium text-sm">
+                  {getCityBySlug(s)?.name ?? s}
+                </Link>
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="max-w-5xl mx-auto px-6 pb-24">
         <h2 className="font-display font-bold text-2xl text-center mb-6">What professionals say about Geonayan</h2>

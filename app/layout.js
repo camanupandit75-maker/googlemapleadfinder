@@ -36,6 +36,24 @@ export default function RootLayout({ children }) {
         <link rel="canonical" href="https://www.geonayan.com" />
       </head>
       <body className="font-body antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Geonayan",
+              url: "https://www.geonayan.com",
+              description: "B2B lead generation tool for finding business leads from Google Maps",
+              founder: {
+                "@type": "Person",
+                name: "Manu Pandit",
+                jobTitle: "Founder & Chartered Accountant",
+              },
+              foundingDate: "2026",
+            }),
+          }}
+        />
         {children}
         <Analytics />
       </body>
