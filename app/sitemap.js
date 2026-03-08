@@ -19,6 +19,7 @@ export default function sitemap() {
     { url: `${baseUrl}/login`, lastModified, priority: 0.5 },
     { url: `${baseUrl}/signup`, lastModified, priority: 0.7 },
     { url: `${baseUrl}/demo`, lastModified, priority: 0.6 },
+    { url: `${baseUrl}/contact`, lastModified, priority: 0.6 },
     ...cityPages,
   ];
 }

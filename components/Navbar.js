@@ -43,6 +43,15 @@ export default function Navbar({ variant = "dark" }) {
         >
           Request Demo
         </Link>
+        <Link
+          href="/contact"
+          className={`text-sm font-medium transition-colors duration-150 ${isDark
+            ? "text-slate-300 hover:text-white"
+            : "text-slate-600 hover:text-slate-900"
+            }`}
+        >
+          Contact
+        </Link>
                 <Link
                     href="/signup"
                     className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors duration-150"
