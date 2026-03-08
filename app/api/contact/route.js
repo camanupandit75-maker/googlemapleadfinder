@@ -9,6 +9,7 @@ export async function POST(request) {
 
     const name = (body.name ?? "").toString().trim();
     const email = (body.email ?? "").toString().trim();
+    const phone = body.phone ? body.phone.toString().trim() : null;
     const subject = body.subject ? body.subject.toString().trim() : null;
     const message = (body.message ?? "").toString().trim();
 
@@ -23,6 +24,7 @@ export async function POST(request) {
     const { error } = await supabase.from("contact_messages").insert({
       name,
       email,
+      phone,
       subject,
       message,
       created_at: new Date().toISOString(),

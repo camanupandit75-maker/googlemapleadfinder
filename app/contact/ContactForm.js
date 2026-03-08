@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -26,6 +27,7 @@ export default function ContactForm() {
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
+          phone: phone.trim() || null,
           subject: subject.trim() || null,
           message: message.trim(),
         }),
@@ -38,6 +40,7 @@ export default function ContactForm() {
       setSubmitted(true);
       setName("");
       setEmail("");
+      setPhone("");
       setSubject("");
       setMessage("");
     } catch (err) {
@@ -87,6 +90,16 @@ export default function ContactForm() {
             placeholder="you@example.com"
           />
         </div>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-slate-400 mb-1">Phone / WhatsApp (optional)</label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          placeholder="+91 XXXXXXXXXX"
+        />
       </div>
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-1">Subject (optional)</label>
